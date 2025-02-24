@@ -41,12 +41,6 @@ class Player(pygame.sprite.Sprite):
         self.screen_height = 600  
         self.target_y = self.screen_height - 100   # Position player near bottom
         
-        # Create a health bar in the top of the player as health bar
-        self.max_health = 200
-        self.health_bar_length = 100
-        self.health_ratio = self.max_health / self.health_bar_length
-        # creating a rect for health bar
-        self.health_bar = pygame.Rect(40, 10, self.health_bar_length, 20)
         self.has_key = True
     
     def load_animations(self):
@@ -77,108 +71,69 @@ class Player(pygame.sprite.Sprite):
             self.animation_list.append(temp_list)  # Append to animation_list
 
 
-    def move(self, ground_group):
-        dx = 0
-        dy = 0
-        screen_dx = 0
-        screen_dy = 0
 
+    def move(self, ground_group):
+        """Handles player movement and keeps player centered on screen."""
+        dx, dy = 0, 0
+
+        self.vel_y += 0.2  # Gravity effect
+        dy = self.vel_y
 
         keys = pygame.key.get_pressed()
-        new_action = None
-    
-        if self.InAir:
-            self.speed = 4
-        else:
-            self.speed = 2
-
-        # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir and not self.isReloading and not self.isShooting and self.alive:
+        if keys[pygame.K_a]:
+            self.direction = -1
+            dx -= self.speed
+            self.update_animation(2)
+        elif keys[pygame.K_d]:
+            self.direction = 1
+            dx += self.speed
+            self.update_animation(2)
+        elif keys[pygame.K_w] and not self.InAir:
             self.InAir = True
-            self.vel_y = -14 * self.zoom_value
-            new_action = "Jump"
+            self.vel_y = -5
+            self.update_animation(3)
+        else:
+            self.update_animation(0)
 
-
-
-        # Allow horizontal movement even while in the air
-        if (keys[pygame.K_a] or keys[pygame.K_d]) and self.alive:
-            if keys[pygame.K_a]:
-                dx = -self.speed
-                self.direction = -1
-            elif keys[pygame.K_d]:
-                dx = self.speed
-                self.direction = 1
-
-            if not self.InAir and not self.isReloading and not self.isShooting and self.alive:
-                if keys[pygame.K_LSHIFT] and self.sprint_value > 0:
-                    self.sprint_value -= 1
-                    dx *= 3 
-                    new_action = "Run"
-                else:
-                    new_action = "Walk"
-
-
-        # Update animation
-        if new_action and self.alive:
-            self.update_animation(new_action)
-
-        # Apply gravity
-        self.vel_y += 0.5 * self.zoom_value
-        dy = self.vel_y
-        
-        # Handle horizontal movement and collisions
-        new_x = self.rect.x + dx
-        player_rect_horizontal = self.rect.copy()
-        player_rect_horizontal.x = new_x
+        # Apply horizontal movement
+        self.rect.x += dx
 
         # Check horizontal collisions
         for ground in ground_group:
-            if player_rect_horizontal.colliderect(ground.rect):
-                if dx > 0:
-                    dx = ground.rect.left - self.rect.right
-                elif dx < 0:
-                    dx = ground.rect.right - self.rect.left
-                break
+            if self.rect.colliderect(ground.rect):
+                if dx > 0:  # Moving right
+                    self.rect.right = ground.rect.left
+                elif dx < 0:  # Moving left
+                    self.rect.left = ground.rect.right
 
-        self.rect.x += dx
-
-        # Handle vertical movement and collisions
-        new_y = self.rect.y + dy
-        player_rect_vertical = self.rect.copy()
-        player_rect_vertical.y = new_y
-
-        # Check vertical collisions
-        for ground in ground_group:
-            if player_rect_vertical.colliderect(ground.rect):
-                if dy > 0:  # Falling down
-                    self.vel_y = 0
-                    dy = ground.rect.top - self.rect.bottom
-                    self.InAir = False
-                    self.speed = 2
-                elif dy < 0:  # Moving up
-                    self.vel_y = 0
-                    dy = 0
-                break
-
+        # Apply vertical movement
         self.rect.y += dy
 
-        # Horizontal scrolling
-        if self.rect.right > SCREEN_THRUST_X:
-            screen_dx = dx
-            self.rect.x -= dx
-        elif self.rect.left < SCREEN_THRUST_X and self.direction == -1:
-            screen_dx = dx
-            self.rect.x -= dx
+        # Check vertical collisions
+        self.InAir = True
+        for ground in ground_group:
+            if self.rect.colliderect(ground.rect):
+                if dy > 0:  # Landing on ground
+                    self.rect.bottom = ground.rect.top
+                    self.vel_y = 0
+                    self.InAir = False
+                elif dy < 0:  # Hitting ceiling
+                    self.rect.top = ground.rect.bottom
+                    self.vel_y = 0
 
-        # Vertical scrolling (only when in air)
-        if self.rect.bottom > self.target_y and self.vel_y > 0:
-            screen_dy = self.rect.bottom - self.target_y
-            self.rect.bottom = self.target_y
-        elif self.vel_y < 0 and self.rect.bottom < self.target_y:
-            screen_dy = dy
-            self.rect.y -= dy
+        # Keep player centered on screen
+        target_x = SCREEN_WIDTH // 2 - self.rect.width // 2
+        target_y = SCREEN_HEIGHT // 2 - self.rect.height // 2
+
+        screen_dx = self.rect.x - target_x
+        screen_dy = self.rect.y - target_y
+
+        # Adjust player position to stay centered
+        self.rect.x = target_x
+        self.rect.y = target_y
 
         return screen_dx, screen_dy
+
 
 
     def update(self):

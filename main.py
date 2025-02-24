@@ -3,7 +3,8 @@ import sys, os, json
 
 pygame.init()
 pygame.display.set_caption("Game")
-screen = pygame.display.set_mode((800, 600))
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 CELL_SIZE = 70
 ANIMATION_COOLDOWN = 100
@@ -33,12 +34,16 @@ clock = pygame.time.Clock()
 
 # Sprite groups
 tile_group = pygame.sprite.Group()
+decoration_group = pygame.sprite.Group()
 
 
                 
   
 
 def create_map():
+    
+    global player
+    
     """Creates the game map."""
     with open("assets/level/level1.json") as file:
         maze_layout = json.load(file)
@@ -52,27 +57,29 @@ def create_map():
                 if cell > 0 and cell <= 18:
                     tile = Tile(world_x, world_y, cell)
                     tile_group.add(tile)
+                elif cell == 19:
+                    player = Player(world_x, world_y)
                 elif cell >= 20 and cell <= 23:
                     decoration = Decoration(world_x, world_y, cell, "bush")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 24:
                     decoration = Decoration(world_x, world_y, cell, "box")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 25 or cell == 26:
                     decoration = Decoration(world_x, world_y, cell, "mushroom")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 27 or cell == 28:
                     decoration = Decoration(world_x, world_y, cell, "board")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 29:
                     decoration = Decoration(world_x, world_y, cell, "rock")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 30:
                     decoration = Decoration(world_x, world_y, cell, "cut_tree")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
                 elif cell == 31 or cell == 32:
                     decoration = Decoration(world_x, world_y, cell, "tree")
-                    tile_group.add(decoration)
+                    decoration_group.add(decoration)
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
@@ -103,14 +110,13 @@ class Decoration(pygame.sprite.Sprite):
         
         self.image = pygame.image.load(f"assets/maps/forest/{img}.png")
         self.image = pygame.transform.scale(self.image, size[self.type])
-        print(size[self.type])
         self.rect = self.image.get_rect()
         if self.type == "tree":
             self.y = y - CELL_SIZE
         elif self.type == "cut_tree":
             self.y = y + CELL_SIZE  // 2
         elif self.type == "rock":
-            self.y = y + CELL_SIZE 
+            self.y = y + CELL_SIZE // 2
         elif self.type == "mushroom":
             self.y = y + CELL_SIZE // 2 + 10
         elif self.type == "bush":
@@ -132,8 +138,8 @@ class Decoration(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.x = x
-        self.y = y
+        self.x = x 
+        self.y = y - 150
         self.current_action = 0
         self.frame_index = 0
         self.update_time = pygame.time.get_ticks()
@@ -163,7 +169,6 @@ class Player(pygame.sprite.Sprite):
                 continue
             
             num_of_frames = len(os.listdir(action_path))  # Count files
-            print(f"Loading {num_of_frames} frames for {action}")
 
             for i in range(1, num_of_frames + 1):  # Fix range (use +1)
                 img_path = f"assets/player/{action}/{action} ({i}).png"
@@ -173,7 +178,7 @@ class Player(pygame.sprite.Sprite):
                     continue
                 
                 img = pygame.image.load(img_path)
-                img = pygame.transform.scale(img, (50, 50))  # Replace CELL_SIZE
+                img = pygame.transform.scale(img, (60, 60))  # Replace CELL_SIZE
 
                 temp_list.append(img)
             
@@ -200,6 +205,7 @@ class Player(pygame.sprite.Sprite):
 
 
     def move(self, ground_group):
+        print("From Move method" , self.rect.x, self.rect.y)
         """Handles player movement."""
         dx, dy = 0, 0
         
@@ -213,6 +219,7 @@ class Player(pygame.sprite.Sprite):
             self.update_animation(2)
         elif keys[pygame.K_d]:
             self.direction = 1
+            print(self.rect.x)
             dx += self.speed
             self.update_animation(2)
         elif keys[pygame.K_w] and not self.InAir:
@@ -247,6 +254,8 @@ class Player(pygame.sprite.Sprite):
                 elif dy < 0:  # Hitting ceiling
                     self.rect.top = ground.rect.bottom
                     self.vel_y = 0
+        
+        return dx, dy
 
             
     def draw(self):
@@ -255,37 +264,33 @@ class Player(pygame.sprite.Sprite):
 
 
 
-# player = Player(400, 300)
-
 running = True
 
 create_map()
+bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
+bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
+
 
 while running:
     clock.tick(60)
     
+    screen.fill((0, 0, 0))
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             running = False
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_a]:
-        bg_scroll_x -= 3
-    if keys[pygame.K_d]:
-        bg_scroll_x += 3
-    if keys[pygame.K_w]:
-        bg_scroll_y -= 3
-    if keys[pygame.K_s]:
-        bg_scroll_y += 3
-        
-        
-    screen.fill((0, 0, 0))
-    # player.move(tile_group)
-    # player.update()
-    # player.draw()
-    
     
     tile_group.draw(screen)
     tile_group.update()
+    decoration_group.draw(screen)
+    decoration_group.update()
+        
+    x, y = player.move(tile_group)
+    player.update()
+    player.draw()
+    # print(player.rect.x, player.rect.y)
+    
+
 
     pygame.display.update()
 pygame.quit()
