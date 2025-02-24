@@ -10,6 +10,11 @@ CELL_SIZE = 70
 ANIMATION_COOLDOWN = 100
 SCREEN_THRUST_X = 400
 
+
+# images
+bg_img = pygame.image.load("assets/maps/forest/BG/BG.png")
+bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
 # Clock 
 
 MAP_WIDTH = 100 * CELL_SIZE # This is the width of the map 100 cells in a row * CELLSIZE
@@ -18,11 +23,12 @@ MAP_WIDTH = 100 * CELL_SIZE # This is the width of the map 100 cells in a row * 
 size = {
     "bush": (CELL_SIZE, CELL_SIZE // 2),
     "mushroom": (CELL_SIZE // 2 -10, CELL_SIZE // 2 - 10 ),
-    "rock": (CELL_SIZE // 2, CELL_SIZE // 2),
-    "tree": (CELL_SIZE * 2, CELL_SIZE * 2),
+    "rock": (CELL_SIZE // 2, CELL_SIZE // 2 - 10),
+    "tree": (CELL_SIZE * 4, CELL_SIZE * 4),
     "board": (CELL_SIZE // 2, CELL_SIZE // 2),
     "cut_tree": (CELL_SIZE , CELL_SIZE // 2),
     "box" : (CELL_SIZE //2 , CELL_SIZE // 2),
+    "water": (CELL_SIZE, CELL_SIZE)
 
 }
 
@@ -37,6 +43,7 @@ clock = pygame.time.Clock()
 tile_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
 boundary_group = pygame.sprite.Group()
+ocean_group = pygame.sprite.Group()
 
 
                 
@@ -56,9 +63,15 @@ def create_map():
             for x, cell in enumerate(row):
                 world_x = x * CELL_SIZE
                 world_y = y * CELL_SIZE
-                if cell > 0 and cell <= 18:
+                if cell > 0 and cell <= 16:
                     tile = Tile(world_x, world_y, cell)
                     tile_group.add(tile)
+                elif cell == 17:
+                    ocean = Ocean(world_x, world_y)
+                    ocean_group.add(ocean)
+                elif cell == 18:
+                    decoration = Decoration(world_x, world_y, cell, "water")
+                    decoration_group.add(decoration)
                 elif cell == 19:
                     player = Player(world_x, world_y)
                 elif cell >= 20 and cell <= 23:
@@ -103,7 +116,6 @@ class Tile(pygame.sprite.Sprite):
         self.rect.y = self.y - bg_scroll_y
     
 
-
 class Decoration(pygame.sprite.Sprite):
     def __init__(self, x, y, img, type):
         super().__init__()
@@ -114,11 +126,11 @@ class Decoration(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, size[self.type])
         self.rect = self.image.get_rect()
         if self.type == "tree":
-            self.y = y - CELL_SIZE
+            self.y = y - CELL_SIZE * 3
         elif self.type == "cut_tree":
             self.y = y + CELL_SIZE  // 2
         elif self.type == "rock":
-            self.y = y + CELL_SIZE // 2
+            self.y = y + CELL_SIZE // 2 + 10
         elif self.type == "mushroom":
             self.y = y + CELL_SIZE // 2 + 10
         elif self.type == "bush":
@@ -127,6 +139,8 @@ class Decoration(pygame.sprite.Sprite):
              self.y = y + CELL_SIZE // 2
         elif self.type == "board":
             self.y = y + CELL_SIZE // 2
+        elif self.type == "water":
+            self.y = y + CELL_SIZE // 2
             
         self.rect.center = (self.x, self.y)
     def update(self):
@@ -134,19 +148,41 @@ class Decoration(pygame.sprite.Sprite):
         self.rect.y = self.y - bg_scroll_y
     
 
+class Ocean(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.image.load("assets/maps/forest/17.png")
+        self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y + CELL_SIZE // 2
+        self.rect.x = x
+        self.rect.y = y
+    
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+    
+    
+    def check_collision(self,player):
+        if self.rect.colliderect(player.rect):
+            player.take_damage(30)
+
+
 class Boundary(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
         super().__init__()
+        self.x = x 
+        self.y = y
         self.rect = pygame.Rect(x, y, width, height)
 
     def update(self):
-        self.rect.x -= bg_scroll_x
-        self.rect.y -= bg_scroll_y
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y -  bg_scroll_y
     
     def draw(self):
         pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
     
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -161,8 +197,10 @@ class Player(pygame.sprite.Sprite):
         self.speed = 2
         self.InAir = False
         self.alive = True
+        self.health = 100
+        self.max_health = self.health
             
-        self.animation_names = ["Idle", "Run", "Walk", "Jump", "Attack", "Dead"]
+        self.animation_names = ["Idle", "Run", "Walk", "Jump", "Attack", "Dead", "JumpAttack"]
         self.animation_list = []  # Store animation frames
         self.load_animations()
         self.image = self.animation_list[self.current_action][self.frame_index]
@@ -172,9 +210,10 @@ class Player(pygame.sprite.Sprite):
         
         self.target_y = self.screen_height - 100
         self.isAttacking = False
-        self.jump = -11
+        self.jump = -8
+        self.gravity = 0.3
         
-        self.animation_cooldown = 100
+        self.animation_cooldown = 80
         
         
     def load_animations(self):
@@ -209,6 +248,15 @@ class Player(pygame.sprite.Sprite):
         if pygame.time.get_ticks() - self.update_time > self.animation_cooldown: 
             self.update_time = pygame.time.get_ticks()
             self.frame_index += 1
+        
+        if (self.current_action == 4 or self.current_action == 6) and self.frame_index >= len(self.animation_list[self.current_action]):
+            self.frame_index = 0
+            self.isAttacking = False
+            self.current_action = 0
+        
+        if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
+            self.frame_index = len(self.animation_list[self.current_action]) - 1
+            self.alive = False
 
         if self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = 0
@@ -226,71 +274,88 @@ class Player(pygame.sprite.Sprite):
             self.update_time = pygame.time.get_ticks()
 
 
-    def move(self, ground_group, boundary_group):
-        
-        dx = 0
-        dy = 0
-        screen_dx = 0
-        screen_dy = 0
+    def take_damage(self, amount):
+        """Reduces player health."""
+        self.health -= amount
+        if self.health <= 0:
+            self.alive = False
+            self.update_animation(5)
+        else:
+            self.vel_y = -4
+            self.update_animation(3)
 
+
+
+    def move(self, ground_group, boundary_group):
+
+        dx, dy = 0, 0
+        screen_dx, screen_dy = 0, 0
 
         keys = pygame.key.get_pressed()
         new_action = None
-            
-        if self.InAir:
-            self.speed = 4
-        else:
-            self.speed = 2
+
+        # Adjust speed based on air status
+        self.speed = 4 if self.InAir else 2
 
         # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir and self.alive:
+        if keys[pygame.K_w] and not self.InAir:
             self.InAir = True
             self.vel_y = self.jump
-            new_action = 3
+            new_action = 3  # Jumping animation
 
-        # Allow horizontal movement even while in the air
-        if (keys[pygame.K_a] or keys[pygame.K_d]) and self.alive:
-            if keys[pygame.K_a]:
+        # Horizontal movement
+        if self.alive and not self.isAttacking:
+            if keys[pygame.K_a]:  
                 dx = -self.speed
                 self.direction = -1
             elif keys[pygame.K_d]:
                 dx = self.speed
                 self.direction = 1
-                
-            if not self.InAir and self.alive:
-                if keys[pygame.K_LSHIFT] :
-                    dx *= 3 
-                    new_action = 1
+            
+            if not self.InAir:
+                if keys[pygame.K_LSHIFT]:
+                    dx *= 3  # Sprinting
+                    new_action = 1  # Running animation
                     self.animation_cooldown = 50
                 else:
-                    new_action = 2
-                    self.animation_cooldown = 100
+                    new_action = 2  # Walking animation
+                    self.animation_cooldown = 80
 
-        # Ensure idle animation when no keys are pressed and not in the air
-        if not (keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w]) and not self.InAir:
-            new_action = 0  # Idle
+        if keys[pygame.K_SPACE]:
+            if self.InAir:
+                new_action = 6
+            else:
+                new_action = 4
+            self.isAttacking = True 
 
-        # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir and self.alive:
-            self.InAir = True
-            self.vel_y = -11
-            new_action = 3  # Jumping
+        # Idle animation when no movement
+        if not (keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w]) and not self.InAir and not self.isAttacking:
+            new_action = 0  # Idle animation
+        
 
-        # Update animation
+
+        # Update animation if changed
         if new_action is not None and self.alive:
             self.update_animation(new_action)
 
         # Apply gravity
-        self.vel_y += 0.5 
+        self.vel_y += self.gravity
         dy = self.vel_y
-        
-    
-        # Handle horizontal movement and collisions
-        new_x = self.rect.x + dx
-        player_rect_horizontal = self.rect.copy()
-        player_rect_horizontal.x = new_x
 
-        # Check horizontal collisions
+        # --- Handle Collisions --- #
+        
+        ## ✅ **Horizontal Collision (Walls & Boundaries)**
+        player_rect_horizontal = self.rect.copy()
+        player_rect_horizontal.x += dx
+
+        for boundary in boundary_group:
+            if player_rect_horizontal.colliderect(boundary.rect):
+                if dx > 0:  # Moving right
+                    self.rect.right = boundary.rect.left
+                elif dx < 0:  # Moving left
+                    self.rect.left = boundary.rect.right
+                dx = 0  # Stop movement
+
         for ground in ground_group:
             if player_rect_horizontal.colliderect(ground.rect):
                 if dx > 0:
@@ -301,61 +366,48 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.x += dx
 
-        # Handle vertical movement and collisions
-        new_y = self.rect.y + dy
+        ## ✅ **Vertical Collision (Ground & Platforms)**
         player_rect_vertical = self.rect.copy()
-        player_rect_vertical.y = new_y
+        player_rect_vertical.y += dy
 
-        # Check vertical collisions
         for ground in ground_group:
             if player_rect_vertical.colliderect(ground.rect):
                 if dy > 0:  # Falling down
+                    self.rect.bottom = ground.rect.top
                     self.vel_y = 0
-                    dy = ground.rect.top - self.rect.bottom
                     self.InAir = False
-                    self.speed = 2
-                elif dy < 0:  # Moving up
+                elif dy < 0:  # Jumping
+                    self.rect.top = ground.rect.bottom
                     self.vel_y = 0
-                    dy = 0
-                break
+                dy = 0  # Stop movement
 
         self.rect.y += dy
 
-        # Horizontal scrolling
+        # --- Handle Scrolling --- #
+        
+        ## ✅ **Horizontal Scrolling**
         if self.rect.right > SCREEN_THRUST_X:
             if self.rect.x + dx < MAP_WIDTH - SCREEN_WIDTH:
                 screen_dx = dx
-            self.rect.x -= dx
+            self.rect.x -= dx  # Prevent infinite scrolling
         elif self.rect.left < SCREEN_THRUST_X and self.direction == -1:
             screen_dx = dx
-            self.rect.x -= dx
-        # Vertical scrolling (only when in air)
+            self.rect.x -= dx  
+
+        ## ✅ **Vertical Scrolling (Only when in air)**
         if self.rect.bottom > self.target_y and self.vel_y > 0:
             screen_dy = self.rect.bottom - self.target_y
             self.rect.bottom = self.target_y
         elif self.vel_y < 0 and self.rect.bottom < self.target_y:
             screen_dy = dy
             self.rect.y -= dy
-        
-        
-        for boundary in boundary_group:
-            if self.rect.colliderect(boundary.rect):
-                if dx > 0:
-                    dx = boundary.rect.left - self.rect.right
-                elif dx < 0:
-                    dx = boundary.rect.right - self.rect.left
-                if dy > 0:
-                    dy = boundary.rect.top - self.rect.bottom
-                elif dy < 0:
-                    dy = boundary.rect.bottom - self.rect.top
-                break
-        
+
         return screen_dx, screen_dy
+
             
     def draw(self):
         """Draws the player onto the screen."""
         screen.blit(self.image, self.rect)
-
 
 
 running = True
@@ -365,31 +417,61 @@ bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
 bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
 
 
+# Initialize dedicated background parallax variables
+bg_parallax_x = 0
+
+
+
+def GameIntro():
+    pass
+
+
+
+
 while running:
     clock.tick(60)
     
     screen.fill((0, 0, 0))
+
+    # Get player movement first
+    x, y = player.move(tile_group, boundary_group)
+    
+    # Update main map scrolling (keep this as is)
+    bg_scroll_x += x
+    bg_scroll_y += y
+    
+    # Update background parallax (moves opposite direction at reduced speed)
+    bg_parallax_x -= x * 0.3  # Opposite direction to player movement
+    
+    # Calculate the modulo for infinite background scrolling
+    bg_x = bg_parallax_x % SCREEN_WIDTH
+    
+    # Draw the background with parallax effect
+    screen.blit(bg_img, (bg_x - SCREEN_WIDTH, 0))
+    screen.blit(bg_img, (bg_x, 0))
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             running = False
     
-    tile_group.draw(screen)
     tile_group.update()
-    decoration_group.draw(screen)
+    tile_group.draw(screen)
+
     decoration_group.update()
+    decoration_group.draw(screen)
+
     boundary_group.update()
-    for boundary in boundary_group:
-        boundary.draw()    
-            
-    x, y = player.move(tile_group, boundary_group)
-    bg_scroll_y += y
-    bg_scroll_x += x
+
+    ocean_group.update()
+    ocean_group.draw(screen)
+    for ocean in ocean_group:
+        ocean.check_collision(player)
+    
     player.update()
     player.draw()
     # print(player.rect.x, player.rect.y)
-    
 
 
     pygame.display.update()
+
 pygame.quit()
