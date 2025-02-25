@@ -164,6 +164,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.update_time = pygame.time.get_ticks()
+        self.alive = True
     
     
     def load_animations(self):
@@ -180,12 +181,24 @@ class Enemy(pygame.sprite.Sprite):
     
     
     def update(self):
+
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
+            
         
         if pygame.time.get_ticks() - self.update_time > 100:
             self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
+        
+        if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
+            self.current_action = 0
+            self.frame_index = 0
+        
+        if self.current_action == 3 and self.frame_index >= len(self.animation_list[self.current_action]):
+            self.frame_index = len(self.animation_list[self.current_action]) - 1
+            self.current_action = 3
+        
+        
         
         if self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = 0
@@ -206,9 +219,13 @@ class Enemy(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x, self.rect.y))
     
     def take_damage(self, damage):
+        if not self.alive:
+            return
         self.health -= damage
         if self.health <= 0:
-            self.kill()
+            self.update_animation(3)
+        else:
+            self.update_animation(5)
     
 
 def draw_health_bar(screen, health, position=(10, 10)):

@@ -236,8 +236,7 @@ class Player(pygame.sprite.Sprite):
             for enemy in enemy_group:
                 if self.attack_rect.colliderect(enemy.rect) and pygame.time.get_ticks() - self.last_attack_time > 500:
                     if self.frame_index > 3 and self.frame_index < 11:
-                        enemy.take_damage(10)
-                        print(f"Enemy hit! Health: {enemy.health}")
+                        enemy.take_damage(30)
                         self.last_attack_time = pygame.time.get_ticks()
                         break
             
@@ -256,6 +255,4 @@ class Player(pygame.sprite.Sprite):
     def draw(self):
         """Draws the player onto the screen."""
         screen.blit(self.image, self.rect)
-        if self.isAttacking and self.frame_index > 3 and self.frame_index < 11:
-            pygame.draw.rect(screen, BLUE, self.attack_rect)
         # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
