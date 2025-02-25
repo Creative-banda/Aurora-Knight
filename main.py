@@ -162,9 +162,12 @@ class Enemy(pygame.sprite.Sprite):
         self.image = self.animation_list[self.current_action][self.frame_index]
         self.rect = self.image.get_rect()
         self.rect.x = x
+        self.direction = -1
         self.rect.y = y
         self.update_time = pygame.time.get_ticks()
         self.alive = True
+        
+        self.vision_rect = pygame.Rect(self.x - 100, self.y - 100, 100, 20)
     
     
     def load_animations(self):
@@ -185,7 +188,6 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
             
-        
         if pygame.time.get_ticks() - self.update_time > 100:
             self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
@@ -198,12 +200,14 @@ class Enemy(pygame.sprite.Sprite):
             self.frame_index = len(self.animation_list[self.current_action]) - 1
             self.current_action = 3
         
-        
-        
         if self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = 0
             
         self.image = self.animation_list[self.current_action][self.frame_index]
+        self.image = pygame.transform.flip(self.image, self.direction == 1, False)
+    
+        self.vision_rect.x = self.rect.x + 50 * self.direction
+        self.vision_rect.y =  self.rect.top + CELL_SIZE // 2
             
     def update_animation(self, action):
         if self.current_action != action:
@@ -217,6 +221,8 @@ class Enemy(pygame.sprite.Sprite):
     
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+        # draw vision rectangle
+        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
     
     def take_damage(self, damage):
         if not self.alive:
@@ -226,6 +232,13 @@ class Enemy(pygame.sprite.Sprite):
             self.update_animation(3)
         else:
             self.update_animation(5)
+    
+    
+    def ai(self):
+        if not self.alive:
+            return
+        
+        
     
 
 def draw_health_bar(screen, health, position=(10, 10)):
@@ -369,6 +382,7 @@ while running:
         if diff_x < 800:
             enemy.update()
             enemy.draw()
+            enemy.ai()
 
 
     for ocean in ocean_group:
