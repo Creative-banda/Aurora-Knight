@@ -9,6 +9,7 @@ pygame.init()
 # Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 
 CELL_SIZE = 70
 ANIMATION_COOLDOWN = 100
@@ -21,13 +22,20 @@ SCREEN_THRUST_X = 400
 MAP_WIDTH = 100 * CELL_SIZE # This is the width of the map 100 cells in a row * CELLSIZE
 
 
+# Sprite groups
+tile_group = pygame.sprite.Group()
+decoration_group = pygame.sprite.Group()
+boundary_group = pygame.sprite.Group()
+ocean_group = pygame.sprite.Group()
+enemy_group = pygame.sprite.Group()
+
+
 screen = pygame.display.set_mode(SCREEN_SIZE)
-pygame.display.set_caption("Platformer")
+pygame.display.set_caption("Aurora-Knight")
 
 
 
 # Paths
-
 ASSETS_DIR = "assets"
 IMAGES_DIR = f"{ASSETS_DIR}/images"
 LEVELS_DIR = f"{ASSETS_DIR}/level"

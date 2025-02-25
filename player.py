@@ -1,5 +1,5 @@
 import pygame,os
-from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X
+from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, BLUE
 
 
 SCREEN_THRUST_X = 400
@@ -34,7 +34,10 @@ class Player(pygame.sprite.Sprite):
         self.jump = -8
         self.gravity = 0.3
         
+        self.attack_rect = pygame.Rect(self.x, self.y, 30, 30)
+        
         self.animation_cooldown = 80
+        self.last_attack_time = pygame.time.get_ticks()
         
         
     def load_animations(self):
@@ -66,6 +69,8 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         """Updates the player animation frame."""
+
+
         if pygame.time.get_ticks() - self.update_time > self.animation_cooldown: 
             self.update_time = pygame.time.get_ticks()
             self.frame_index += 1
@@ -76,7 +81,7 @@ class Player(pygame.sprite.Sprite):
             self.current_action = 0
         
         if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
-            self.frame_index = len(self.animation_list[self.current_action]) - 1
+            self.frame_index = len(self.animation_list[self.current_action]) - 1    
             self.alive = False
 
         if self.frame_index >= len(self.animation_list[self.current_action]):
@@ -100,16 +105,14 @@ class Player(pygame.sprite.Sprite):
         self.health -= amount
         if self.health <= 0:
             self.alive = False
-            self.update_animation(5)
-            self.vel_y = 0
-                        
+            self.update_animation(5)                        
         else:
-            self.vel_y = -7
             self.update_animation(3)
 
+        self.vel_y = -7
 
 
-    def move(self, ground_group, boundary_group):
+    def move(self, ground_group, boundary_group, enemy_group):
 
         dx, dy = 0, 0
         screen_dx, screen_dy = 0, 0
@@ -150,6 +153,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 new_action = 4
             self.isAttacking = True 
+            self.attack_rect = self.attack()
 
         # Idle animation when no movement
         if not (keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w]) and not self.InAir and not self.isAttacking:
@@ -224,10 +228,34 @@ class Player(pygame.sprite.Sprite):
         elif self.vel_y < 0 and self.rect.bottom < self.target_y:
             screen_dy = dy
             self.rect.y -= dy
+        
+        
+        # Check Attacking Collision with Enemy
+        
+        if self.isAttacking:
+            for enemy in enemy_group:
+                if self.attack_rect.colliderect(enemy.rect) and pygame.time.get_ticks() - self.last_attack_time > 500:
+                    if self.frame_index > 3 and self.frame_index < 11:
+                        enemy.take_damage(10)
+                        print(f"Enemy hit! Health: {enemy.health}")
+                        self.last_attack_time = pygame.time.get_ticks()
+                        break
+            
 
         return screen_dx, screen_dy
+
+    
+    def attack(self):
+        """Creates an attack hitbox in front of the player."""
+        if self.direction == 1:
+            return pygame.Rect(self.rect.right -30, self.rect.top + 30, 50, 10)  # Right attack
+        else:
+            return pygame.Rect(self.rect.left - 20, self.rect.top + 30, 50, 10)  # Left attack
 
             
     def draw(self):
         """Draws the player onto the screen."""
         screen.blit(self.image, self.rect)
+        if self.isAttacking and self.frame_index > 3 and self.frame_index < 11:
+            pygame.draw.rect(screen, BLUE, self.attack_rect)
+        # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)

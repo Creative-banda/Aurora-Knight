@@ -3,79 +3,83 @@ import pygame
 # Initialize pygame
 pygame.init()
 
-# Set the height and width of the screen
-screen = pygame.display.set_mode((800, 600))
+# Screen setup
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
-# Load background image
-bg_image = pygame.image.load("assets/GUI/background.jpg").convert()
-bg_image = pygame.transform.scale(bg_image, (800, 600))
+# Colors
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
-# Load game name image
-game_name = pygame.image.load("assets/GUI/game_name.png")
-game_name = pygame.transform.scale(game_name, (700, 250))
+# Player setup
+player = pygame.Rect(300, 300, 50, 50)
+player_speed = 5
+facing_right = True  # Track player direction
+attacking = False    # Track attack state
 
-def start_game():
-    print("Game started!")
+# Enemy setup
+enemy = pygame.Rect(500, 300, 50, 50)
+enemy_health = 3  # Enemy health points
+
+# Attack properties
+attack_duration = 200  # Attack lasts 200ms
+last_attack_time = 0
 
 
-class Button():
-    def __init__(self, x, y, width, height, image, callback=None):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.original_image = pygame.transform.scale(image, (width, height))
-        self.hover_image = pygame.transform.scale(image, (int(width * 0.9), int(height * 0.9)))  # 10% smaller
-        self.image = self.original_image
-        self.rect = self.original_image.get_rect(topleft=(x, y))
-        self.clicked = False
-        self.callback = callback
-
-    def update(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_click = pygame.mouse.get_pressed()
-
-        if self.rect.collidepoint(mouse_pos):  # Check if mouse is over the button
-            self.image = self.hover_image  # Change to smaller image
-            # Adjust position so it remains centered
-            self.rect = self.hover_image.get_rect(center=self.rect.center)
-            if mouse_click[0] and self.callback and not self.clicked:  # Check if left mouse button is clicked
-                self.callback()  # Call the callback function
-                self.clicked = True
-        else:
-            self.image = self.original_image  # Reset to normal size
-            self.rect = self.original_image.get_rect(topleft=(self.x, self.y))
-
-    def draw(self, screen):
-        screen.blit(self.image, self.rect.topleft)
-
-# Load button image
-button_image = pygame.image.load("assets/GUI/play.png")
-
-# Create button instance
-button = Button(340, 300, 130, 130, button_image, start_game)
-
+def attack():
+    """Creates an attack hitbox in front of the player."""
+    if facing_right:
+        return pygame.Rect(player.right, player.top + 10, 40, 30)  # Right attack
+    else:
+        return pygame.Rect(player.left - 40, player.top + 10, 40, 30)  # Left attack
 
 
 # Game loop
 running = True
 while running:
-    clock.tick(60)  # Run at 60 FPS
+    screen.fill(WHITE)
+    
+    current_time = pygame.time.get_ticks()  # Get current time
 
+    # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and not attacking:  # Attack with space
+                attacking = True
+                last_attack_time = current_time
 
-    # Draw everything
-    screen.blit(bg_image, (0, 0))
-    screen.blit(game_name, (80, 80))
+    # Player movement
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        player.x -= player_speed
+        facing_right = False
+    if keys[pygame.K_RIGHT]:
+        player.x += player_speed
+        facing_right = True
 
-    # Update and draw the button
-    button.update()
-    button.draw(screen)
+    # Attack logic
+    if attacking:
+        attack_rect = attack()
+        pygame.draw.rect(screen, BLUE, attack_rect)  # Draw attack hitbox
+        
+        # Check collision with enemy
+        if attack_rect.colliderect(enemy):
+            enemy_health -= 1
+            print(f"Enemy hit! Health: {enemy_health}")
+        
+        # End attack after duration
+        if current_time - last_attack_time > attack_duration:
+            attacking = False
 
-    pygame.display.flip()  # Refresh the screen
+    # Draw player and enemy
+    pygame.draw.rect(screen, RED, player)  # Player
+    pygame.draw.rect(screen, (0, 255, 0), enemy)  # Enemy
 
-# Quit pygame
+    pygame.display.flip()
+    clock.tick(60)  # Limit FPS
+
 pygame.quit()

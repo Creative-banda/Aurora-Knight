@@ -1,30 +1,16 @@
 import pygame
-import sys, json
+import sys, json, os
 from settings import *
 from player import Player
-
-
 
 
 # Clock 
 clock = pygame.time.Clock()
 
 
-
 bg_scroll_x = 0
 bg_scroll_y = 0
-
-
-
-# Sprite groups
-tile_group = pygame.sprite.Group()
-decoration_group = pygame.sprite.Group()
-boundary_group = pygame.sprite.Group()
-ocean_group = pygame.sprite.Group()
-
-
                 
-  
 
 def create_map():
     
@@ -72,10 +58,14 @@ def create_map():
                 elif cell == 31 or cell == 32:
                     decoration = Decoration(world_x, world_y, cell, "tree")
                     decoration_group.add(decoration)
+                elif cell == 33:
+                    enemy = Enemy(world_x, world_y)
+                    enemy_group.add(enemy)
                 
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
                     boundary_group.add(boundary)
+
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
@@ -148,13 +138,78 @@ class Ocean(pygame.sprite.Sprite):
     
     
     def check_collision(self,player):
-        if self.rect.colliderect(player.rect):
+        if self.rect.colliderect(player.rect) and player.alive:
             player.take_damage(30)
         
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+
+        self.frame_index = 0
+        self.animation_list = []
+        self.x = x
+        self.y = y 
+        self.health = 100
+        self.max_health = self.health
+        self.current_action = 0
+        self.speed = 1       
+        self.action_list = ["idle", "run", "attack", "die", "stun", "hit"]
+        self.load_animations() 
+        self.image = self.animation_list[self.current_action][self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.update_time = pygame.time.get_ticks()
+    
+    
+    def load_animations(self):
+        for action in self.action_list:
+            temp_list = []
+            action_path = f"{IMAGES_DIR}/enemy/mushroom/{action}"
+            num_of_frames = len(os.listdir(action_path))
+            for i in range(0, num_of_frames ):
+                img_path = f"{IMAGES_DIR}/enemy/mushroom/{action}/{i}_{action}.png"
+                img = pygame.image.load(img_path)
+                img = pygame.transform.scale(img, (CELL_SIZE , CELL_SIZE ))
+                temp_list.append(img)
+            self.animation_list.append(temp_list)
+    
+    
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+        
+        if pygame.time.get_ticks() - self.update_time > 100:
+            self.frame_index += 1
+            self.update_time = pygame.time.get_ticks()
+        
+        if self.frame_index >= len(self.animation_list[self.current_action]):
+            self.frame_index = 0
+            
+        self.image = self.animation_list[self.current_action][self.frame_index]
+            
+    def update_animation(self, action):
+        if self.current_action != action:
+            self.current_action = action
+            self.frame_index = 0
+            self.update_time = pygame.time.get_ticks()
+    
+    
+    def attack(self):
+        pass
+    
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+    
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            self.kill()
+    
 
 def draw_health_bar(screen, health, position=(10, 10)):
     """Draws the correct health bar based on player's health."""
@@ -172,7 +227,6 @@ def draw_health_bar(screen, health, position=(10, 10)):
         index = 0
     screen.blit(health_bars[index], position)
         
-    
 
 class Boundary(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
@@ -185,45 +239,6 @@ class Boundary(pygame.sprite.Sprite):
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y -  bg_scroll_y
     
-    def draw(self):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
-    
-
-
-class Button():
-    def __init__(self, x, y, width, height, image, callback=None):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.original_image = pygame.transform.scale(image, (width, height))
-        self.hover_image = pygame.transform.scale(image, (int(width * 0.9), int(height * 0.9)))  # 10% smaller
-        self.image = self.original_image
-        self.rect = self.original_image.get_rect(topleft=(x, y))
-        self.clicked = False
-        self.callback = callback
-
-    def update(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_click = pygame.mouse.get_pressed()
-
-        if self.rect.collidepoint(mouse_pos):  # Check if mouse is over the button
-            self.image = self.hover_image  # Change to smaller image
-            # Adjust position so it remains centered
-            self.rect = self.hover_image.get_rect(center=self.rect.center)
-            if mouse_click[0] and self.callback and not self.clicked:  # Check if left mouse button is clicked
-                self.callback()  # Call the callback function
-                self.clicked = True
-        else:
-            self.image = self.original_image  # Reset to normal size
-            self.rect = self.original_image.get_rect(topleft=(self.x, self.y))
-
-    def draw(self, screen):
-        screen.blit(self.image, self.rect.topleft)
-
-
-
-
 
 class Button():
     def __init__(self, x, y, width, height, image, ):
@@ -257,7 +272,9 @@ class Button():
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
 
+
 running = True
+
 
 create_map()
 bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
@@ -269,9 +286,6 @@ bg_parallax_x = 0
 
 # Create button instance
 button = Button(340, 300, 130, 130, button_image)
-
-
-
 
 
 def GameIntro():
@@ -299,7 +313,7 @@ while running:
     screen.fill((0, 0, 0))
 
     # Get player movement first
-    x, y = player.move(tile_group, boundary_group)
+    x, y = player.move(tile_group, boundary_group, enemy_group)
     
     # Update main map scrolling (keep this as is)
     bg_scroll_x += x
@@ -327,13 +341,17 @@ while running:
             tile.update()
             tile.draw()
 
-    
-
     for decoration in decoration_group:
         diff_x = abs(decoration.x - bg_scroll_x - player_x)
         if diff_x < 800:
             decoration.update()
             decoration.draw()
+        
+    for enemy in enemy_group:
+        diff_x = abs(enemy.x - bg_scroll_x - player_x)
+        if diff_x < 800:
+            enemy.update()
+            enemy.draw()
 
 
     for ocean in ocean_group:
@@ -342,11 +360,10 @@ while running:
             ocean.update()
             ocean.draw()
             ocean.check_collision(player)
+            
 
-    for boundary in boundary_group:
-        diff_x = abs(boundary.x - bg_scroll_x - player_x)
-        if diff_x < 800:
-            boundary.update()
+    boundary_group.update()
+
 
     
     player.update()
