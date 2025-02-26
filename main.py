@@ -292,6 +292,44 @@ def GameIntro():
         clock.tick(60)
 
 
+
+def game_over_screen(screen, background_image):
+    pygame.init()
+    
+    # Load and scale background image
+    bg = pygame.image.load(background_image)
+    bg = pygame.transform.scale(bg, (screen.get_width(), screen.get_height()))
+    
+    # Font settings
+    font = pygame.font.Font(None, 60)
+    text = font.render("Game Over, Press R to Restart", True, (200, 200, 200))  # Light color text
+    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+
+    # Fade surfaces
+    fade_surface = pygame.Surface((screen.get_width(), screen.get_height()))
+    
+    # -------------------- Green Fade In --------------------
+    fade_surface.fill((85, 140, 13))  # Green color
+    for alpha in range(0, 255, 5):  # Increase opacity gradually
+        fade_surface.set_alpha(alpha)
+        screen.blit(fade_surface, (0, 0))
+        pygame.display.update()
+        pygame.time.delay(30)
+
+
+    # -------------------- Show Text & Enable Input --------------------
+    running = True
+    while running:
+        screen.blit(text, text_rect)  # Draw "Game Over" text
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                running = False  # Restart game
+
 bg_music.play(-1)
 GameIntro()
 
@@ -358,7 +396,6 @@ while running:
     
     cloud_group.update()
     cloud_group.draw(screen)
-            
 
     boundary_group.update()
 
@@ -374,6 +411,9 @@ while running:
     fps_text = pygame.font.Font(None, 30).render(fps, True, pygame.Color(BLACK))
     screen.blit(fps_text, (SCREEN_WIDTH // 2, 10))
 
+
+    if not player.alive:
+        game_over_screen(screen, f"{IMAGES_DIR}/GUI/background.jpg")
 
     pygame.display.update()
 

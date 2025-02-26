@@ -1,5 +1,5 @@
 import pygame,os
-from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, BLUE
+from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X
 
 
 SCREEN_THRUST_X = 400
@@ -38,6 +38,13 @@ class Player(pygame.sprite.Sprite):
         
         self.animation_cooldown = 80
         self.last_attack_time = pygame.time.get_ticks()
+
+        # Hurt Attributes
+        self.isHurt = False
+        self.last_hurt_time = pygame.time.get_ticks()
+        self.hurt_cooldown = 1000
+        self.last_blink_time = pygame.time.get_ticks()
+        self.isVisible = True  # Player visibility
         
         
     def load_animations(self):
@@ -86,6 +93,20 @@ class Player(pygame.sprite.Sprite):
 
         if self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = 0
+
+
+        if self.isHurt:
+            current_time = pygame.time.get_ticks()
+
+            # Stop blinking after 700ms
+            if current_time - self.last_hurt_time > 700:
+                self.isHurt = False
+                self.isVisible = True  # Ensure player is visible at the end
+            else:
+                # Toggle visibility every 100ms
+                if current_time - self.last_blink_time > 100:
+                    self.isVisible = not self.isVisible
+                    self.last_blink_time = current_time  # Update last blink time
         
 
         self.image = self.animation_list[self.current_action][self.frame_index]
@@ -107,9 +128,10 @@ class Player(pygame.sprite.Sprite):
             self.alive = False
             self.update_animation(5)                        
         else:
-            self.update_animation(3)
-
-        self.vel_y = -7
+            self.isHurt = True
+            self.last_hurt_time = pygame.time.get_ticks()  # Store current time
+            self.last_blink_time = self.last_hurt_time  # Start blinking
+        self.vel_y = -3
 
 
     def move(self, ground_group, boundary_group, enemy_group, cloud_group):
@@ -191,8 +213,16 @@ class Player(pygame.sprite.Sprite):
                 elif dx < 0:
                     dx = ground.rect.right - self.rect.left
                 break
+        
+        for cloud in cloud_group:
+            if player_rect_horizontal.colliderect(cloud.rect):
+                if dx > 0:
+                    dx = cloud.rect.left - self.rect.right
+                elif dx < 0:
+                    dx = cloud.rect.right - self.rect.left
 
         self.rect.x += dx
+    
 
         ## ✅ **Vertical Collision (Ground & Platforms)**
         player_rect_vertical = self.rect.copy()
@@ -206,6 +236,17 @@ class Player(pygame.sprite.Sprite):
                     self.InAir = False
                 elif dy < 0:  # Jumping
                     self.rect.top = ground.rect.bottom
+                    self.vel_y = 0
+                dy = 0  # Stop movement
+        
+        for cloud in cloud_group:
+            if player_rect_vertical.colliderect(cloud.rect):
+                if dy > 0:
+                    self.rect.bottom = cloud.rect.top
+                    self.vel_y = 0
+                    self.InAir = False
+                elif dy < 0:
+                    self.rect.top = cloud.rect.bottom
                     self.vel_y = 0
                 dy = 0  # Stop movement
 
@@ -230,27 +271,6 @@ class Player(pygame.sprite.Sprite):
             screen_dy = dy
             self.rect.y -= dy
         
-
-        # --- Handle Cloud Collision --- #
-
-        for cloud in cloud_group:
-            if self.rect.colliderect(cloud.rect):
-                if dy > 0:
-                    self.rect.bottom = cloud.rect.top
-                    self.vel_y = 0
-                    self.InAir = False
-                    print("Collide from top")
-                elif dy < 0:
-                    self.rect.top = cloud.rect.bottom
-                    self.vel_y = 0
-                    print("Collide from bottom")
-                if dx > 0:
-                    dx = self.rect.left = cloud.rect.right
-                    print("Collide from left")
-                elif dx < 0:
-                    dx = self.rect.right = cloud.rect.bottom
-                    print("Collide from right")
-        
         
         # Check Attacking Collision with Enemy
         
@@ -261,8 +281,6 @@ class Player(pygame.sprite.Sprite):
                         enemy.take_damage(30)
                         self.last_attack_time = pygame.time.get_ticks()
                         break
-            
-
         return screen_dx, screen_dy
 
     
@@ -275,6 +293,7 @@ class Player(pygame.sprite.Sprite):
 
             
     def draw(self):
-        """Draws the player onto the screen."""
-        screen.blit(self.image, self.rect)
+        """ Draw the player only if visible """
+        if self.isVisible:
+            screen.blit(self.image, self.rect)
         # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)

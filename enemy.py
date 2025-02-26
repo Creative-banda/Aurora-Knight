@@ -27,6 +27,7 @@ class Enemy(pygame.sprite.Sprite):
         self.idling = False
         self.vel_y = 0
         self.isHurt = False
+        self.stun_time = pygame.time.get_ticks()
         self.animation_cool_down = 100
         self.attacking = False
         self.attacking_cooldown = 700
@@ -89,10 +90,15 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.y = self.y - bg_scroll_y
         dx = 0
         dy = 0
+
+        if not self.alive:
+            if pygame.time.get_ticks() - self.stun_time > 3000 and self.current_action != 3:
+                self.alive = True
+                self.health = 100
+                self.update_animation(0)
         
         if pygame.time.get_ticks() - self.last_attack_time > self.attacking_cooldown:
             self.attacking = False
-
 
         if self.health > 0:  # Apply movement logic only if alive
             self.vel_y += 0.5  # Apply gravity
@@ -161,19 +167,27 @@ class Enemy(pygame.sprite.Sprite):
     
     def take_damage(self, damage):
         if not self.alive:
+
             if self.current_action == 4:
                 self.update_animation(3)
+
             return
         self.health -= damage
         if self.health <= 0:
             self.update_animation(4)
             self.alive = False
             self.isHurt = False
+            self.stun_time = pygame.time.get_ticks()
         else:
             self.update_animation(5)
             self.isHurt = True
             self.idling = False
-    
+
+
+    def do_attack(self, player):
+        if self.rect.colliderect(player.rect) and self.frame_index > 2 and self.frame_index < 9:
+            player.take_damage(10)
+
 
     def move_to_player(self, player):
         diff_x = abs(self.vision_rect.x - player.rect.x)
@@ -201,11 +215,11 @@ class Enemy(pygame.sprite.Sprite):
 
             # Check if enemy is close enough to attack
             distance_x = abs(self.rect.x - player.rect.x)
-            distance_y = abs(self.rect.y - player.rect.y)
-            if distance_x < 40 and distance_y < 20:  # Adjust attack range
+            if distance_x < 40 :  # Adjust attack range
                 self.speed = 0  # Stop movement
                 self.current_action = 2  # Attack animation
                 self.attacking = True
+                self.do_attack(player)
                 self.last_attack_time = pygame.time.get_ticks()
         else:
             # If player is not in vision, return to normal behavior (patrolling)
