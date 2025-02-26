@@ -285,7 +285,7 @@ while running:
     for enemy in enemy_group:
         diff_x = abs(enemy.x - bg_scroll_x - player_x)
         if diff_x < 800:
-            enemy.update(bg_scroll_x, bg_scroll_y)
+            enemy.update()
             enemy.move( tile_group, bg_scroll_x, bg_scroll_y)
             enemy.draw()
             enemy.ai(player)

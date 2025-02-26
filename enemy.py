@@ -27,10 +27,12 @@ class Enemy(pygame.sprite.Sprite):
         self.idling = False
         self.vel_y = 0
         self.isHurt = False
+        self.animation_cool_down = 100
+        self.attacking = False
+        self.attacking_cooldown = 700
+        self.last_attack_time = pygame.time.get_ticks()
         
-
-        
-        self.vision_rect = pygame.Rect(self.x - CELL_SIZE // 2, self.y - 100, 150, 20)
+        self.vision_rect = pygame.Rect(self.x + 75, self.y - 100, 150, 20)
     
     
     def load_animations(self):
@@ -46,18 +48,21 @@ class Enemy(pygame.sprite.Sprite):
             self.animation_list.append(temp_list)
     
 
-    def update(self, bg_scroll_x, bg_scroll_y):
-
-        self.rect.x = self.x - bg_scroll_x
-        self.rect.y = self.y - bg_scroll_y
+    def update(self):
             
-        if pygame.time.get_ticks() - self.update_time > 100:
+        if pygame.time.get_ticks() - self.update_time > self.animation_cool_down:
             self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
         
         if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
             self.current_action = 0
             self.frame_index = 0
+            self.isHurt = False
+        
+        if self.current_action == 2 and self.frame_index >= len(self.animation_list[self.current_action]):
+            self.current_action = 0
+            self.frame_index = 0
+            self.attacking = False
         
         if self.current_action == 3 and self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = len(self.animation_list[self.current_action]) - 1
@@ -82,10 +87,12 @@ class Enemy(pygame.sprite.Sprite):
         # Adjust rendering position first
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
-        self.vision_rect.y = self.y - bg_scroll_y
-
         dx = 0
         dy = 0
+        
+        if pygame.time.get_ticks() - self.last_attack_time > self.attacking_cooldown:
+            self.attacking = False
+
 
         if self.health > 0:  # Apply movement logic only if alive
             self.vel_y += 0.5  # Apply gravity
@@ -131,68 +138,77 @@ class Enemy(pygame.sprite.Sprite):
 
         # Update rect position
         self.rect.x = self.x - bg_scroll_x  # Adjust rendering only
-        self.vision_rect.x = self.rect.x + CELL_SIZE // 2 * self.direction
+        self.vision_rect.centerx = self.rect.centerx + (75  * self.direction)
         self.vision_rect.y =  self.rect.top + CELL_SIZE // 2
 
-
-    def update_animation(self, new_action):
-        if new_action != self.current_action:
-            self.current_action = new_action
-            self.frame_index = 0
-            self.last_update_time = pygame.time.get_ticks()
-
-
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
-        
-        # Update health bar position
-        self.health_bar.centerx = self.rect.centerx
-        self.health_bar.y = self.rect.y 
-
-        
-        # Draw health bar
-        pygame.draw.rect(screen, (255, 0, 0), self.health_bar)
     
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # draw vision rectangle
-        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
+        # pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
+
+        # pygame.draw.rect(screen, BLACK, self.rect, 1)
     
     def take_damage(self, damage):
-        if not self.alive:
+        if not self.alive and self.current_action == 4:
+            self.update_animation(3)
             return
         self.health -= damage
         if self.health <= 0:
-            self.update_animation(3)
+            self.update_animation(4)
+            self.alive = False
+            self.isHurt = False
         else:
             self.update_animation(5)
-    
-    
-    def ai(self, player):
-        if not self.alive:
-            return
-        if self.idling == False and random.randint(1, 200) == 1:
-            self.update_animation(0)
-            self.idling = True
-            self.idle_counter = 100
-            self.dx = 0
-            
-        if self.vision_rect.colliderect(player.rect) and player.alive:
-            self.direction = 1 if player.rect.x > self.rect.x else -1
-            self.update_animation(2)
+            self.isHurt = True
             self.idling = False
+    
+
+    def move_to_player(self, player):
+        diff_x = abs(self.vision_rect.x - player.rect.x)
+        if diff_x < 5 :
+            self.update_animation(2)
+    
+
+    def ai(self, player):
+        if not self.alive or self.isHurt:
+            return
+
+        # If enemy is currently attacking, let animation play and stop movement
+        if self.attacking:  # Attack animation index
+            return
+
+        # Check if player is in vision
+        if self.vision_rect.colliderect(player.rect) and player.alive:
+            # Face the player
+            self.direction = 1 if player.rect.x > self.rect.x else -1
+
+            # Increase speed & animation cooldown for running effect
+            self.speed = 1.5  
+            self.animation_cooldown = 50
+            self.current_action = 1  # Run animation
+
+            # Check if enemy is close enough to attack
+            distance_x = abs(self.rect.x - player.rect.x)
+            distance_y = abs(self.rect.y - player.rect.y)
+            if distance_x < 40 and distance_y < 20:  # Adjust attack range
+                self.speed = 0  # Stop movement
+                self.current_action = 2  # Attack animation
+                self.attacking = True
+                self.last_attack_time = pygame.time.get_ticks()
         else:
-            if self.idling == False:
-                self.update_animation(1)
+            # If player is not in vision, return to normal behavior (patrolling)
+            self.animation_cooldown = 100
+            self.speed = 1
+            if not self.idling:
+                self.current_action = 1  # Run animation
                 self.move_counter += 1
 
                 if self.move_counter > CELL_SIZE:
                     self.direction *= -1
                     self.move_counter *= -1
             else:
+                self.current_action = 0  # Idle animation
                 self.idle_counter -= 1
                 if self.idle_counter <= 0:
                     self.idling = False
-
-
-        
