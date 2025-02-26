@@ -2,6 +2,7 @@ import pygame
 
 
 pygame.init()
+pygame.mixer.init()
 
 
 # --- Constants --- #
@@ -28,6 +29,7 @@ decoration_group = pygame.sprite.Group()
 boundary_group = pygame.sprite.Group()
 ocean_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
+cloud_group = pygame.sprite.Group()
 
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
@@ -39,6 +41,7 @@ pygame.display.set_caption("Aurora-Knight")
 ASSETS_DIR = "assets"
 IMAGES_DIR = f"{ASSETS_DIR}/images"
 LEVELS_DIR = f"{ASSETS_DIR}/level"
+SOUND_DIR = f"{ASSETS_DIR}/sound_effects"
 
 
  
@@ -54,6 +57,10 @@ bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg")
 intro_bg = pygame.transform.scale(intro_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+# Sound Effects
+
+bg_music = pygame.mixer.Sound(f"{SOUND_DIR}/bg_music.mp3")
 
 
 # LOCAL VARIABLES

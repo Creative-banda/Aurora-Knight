@@ -112,7 +112,7 @@ class Player(pygame.sprite.Sprite):
         self.vel_y = -7
 
 
-    def move(self, ground_group, boundary_group, enemy_group):
+    def move(self, ground_group, boundary_group, enemy_group, cloud_group):
 
         dx, dy = 0, 0
         screen_dx, screen_dy = 0, 0
@@ -154,6 +154,7 @@ class Player(pygame.sprite.Sprite):
                 new_action = 4
             self.isAttacking = True 
             self.attack_rect = self.attack()
+        
 
         # Idle animation when no movement
         if not (keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w]) and not self.InAir and not self.isAttacking:
@@ -228,6 +229,27 @@ class Player(pygame.sprite.Sprite):
         elif self.vel_y < 0 and self.rect.bottom < self.target_y:
             screen_dy = dy
             self.rect.y -= dy
+        
+
+        # --- Handle Cloud Collision --- #
+
+        for cloud in cloud_group:
+            if self.rect.colliderect(cloud.rect):
+                if dy > 0:
+                    self.rect.bottom = cloud.rect.top
+                    self.vel_y = 0
+                    self.InAir = False
+                    print("Collide from top")
+                elif dy < 0:
+                    self.rect.top = cloud.rect.bottom
+                    self.vel_y = 0
+                    print("Collide from bottom")
+                if dx > 0:
+                    dx = self.rect.left = cloud.rect.right
+                    print("Collide from left")
+                elif dx < 0:
+                    dx = self.rect.right = cloud.rect.bottom
+                    print("Collide from right")
         
         
         # Check Attacking Collision with Enemy

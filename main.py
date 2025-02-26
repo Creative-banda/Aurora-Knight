@@ -1,5 +1,5 @@
 import pygame
-import sys, json
+import sys, json, os
 from settings import *
 from player import Player
 from enemy import Enemy
@@ -208,6 +208,58 @@ class Button():
         screen.blit(self.image, self.rect.topleft)
 
 
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.animation_list = []
+        self.action_list = ["in", "out"]
+        self.load_animation()
+        self.current_action = 0
+        self.index = 0
+        self.image = self.animation_list[self.current_action][self.index]
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        self.animation_cooldown = 10
+        self.last_update = pygame.time.get_ticks()
+        self.max_appear_time = 5000
+        self.created_time = pygame.time.get_ticks()
+    
+    def load_animation(self):
+        for action in self.action_list: 
+            temp_list = []
+            action_path = f"{IMAGES_DIR}/cloud/{action}"
+            num_of_frames = len(os.listdir(action_path))
+            for i in range(0, num_of_frames):
+                img = pygame.image.load(f"{IMAGES_DIR}/cloud/{action}/{i}.png")
+                temp_list.append(img)
+            self.animation_list.append(temp_list)
+    
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y        
+        if pygame.time.get_ticks() - self.last_update > self.animation_cooldown:
+            self.index += 1
+            self.last_update = pygame.time.get_ticks()
+        if self.current_action == 0 and self.index >= len(self.animation_list[self.current_action]) - 1:
+            self.current_action = 0
+            self.index = len(self.animation_list[self.current_action]) - 1
+        
+        if self.current_action == 0 and pygame.time.get_ticks() - self.created_time > self.max_appear_time:
+            self.index = 0
+            self.current_action = 1
+        
+        if self.current_action == 1 and self.index >= len(self.animation_list[self.current_action]) - 1:
+            self.kill()
+        self.image = self.animation_list[self.current_action][self.index]
+    
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
+
 running = True
 
 
@@ -240,6 +292,7 @@ def GameIntro():
         clock.tick(60)
 
 
+bg_music.play(-1)
 GameIntro()
 
 while running:
@@ -248,7 +301,7 @@ while running:
     screen.fill((0, 0, 0))
 
     # Get player movement first
-    x, y = player.move(tile_group, boundary_group, enemy_group)
+    x, y = player.move(tile_group, boundary_group, enemy_group, cloud_group)
     
     # Update main map scrolling (keep this as is)
     bg_scroll_x += x
@@ -267,6 +320,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             running = False
+        
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_e and player.InAir:
+                cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
+                cloud_group.add(cloud)
     
     player_x = player.rect.x 
     
@@ -297,6 +355,9 @@ while running:
             ocean.update()
             ocean.draw()
             ocean.check_collision(player)
+    
+    cloud_group.update()
+    cloud_group.draw(screen)
             
 
     boundary_group.update()

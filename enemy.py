@@ -127,6 +127,16 @@ class Enemy(pygame.sprite.Sprite):
                     dy = 0
                 break  # Stop checking once collision is handled
 
+        
+        # Check horizontal collisions
+        temp_rect = self.rect.copy()
+        temp_rect.x += dx
+        for ground in ground_group:
+            if temp_rect.colliderect(ground.rect):
+                dx = 0
+                self.direction *= -1
+                break  # Stop checking once collision is handled 
+
 
 
         # Update enemy's actual position (without applying bg_scroll_y)
@@ -150,8 +160,9 @@ class Enemy(pygame.sprite.Sprite):
         # pygame.draw.rect(screen, BLACK, self.rect, 1)
     
     def take_damage(self, damage):
-        if not self.alive and self.current_action == 4:
-            self.update_animation(3)
+        if not self.alive:
+            if self.current_action == 4:
+                self.update_animation(3)
             return
         self.health -= damage
         if self.health <= 0:
