@@ -41,7 +41,7 @@ IMAGES_DIR = f"{ASSETS_DIR}/images"
 LEVELS_DIR = f"{ASSETS_DIR}/level"
 
 
-
+ 
 # Images
 
 button_image = pygame.image.load(f"{IMAGES_DIR}/GUI/play.png")
@@ -51,6 +51,9 @@ game_name = pygame.transform.scale(game_name, (700, 250))
 
 bg_img = pygame.image.load(f"{IMAGES_DIR}/maps/forest/BG/BG.png")
 bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg")
+intro_bg = pygame.transform.scale(intro_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
 # LOCAL VARIABLES

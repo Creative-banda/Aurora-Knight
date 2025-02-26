@@ -1,7 +1,8 @@
 import pygame
-import sys, json, os
+import sys, json
 from settings import *
 from player import Player
+from enemy import Enemy
 
 
 # Clock 
@@ -10,7 +11,7 @@ clock = pygame.time.Clock()
 
 bg_scroll_x = 0
 bg_scroll_y = 0
-                
+
 
 def create_map():
     
@@ -145,102 +146,6 @@ class Ocean(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-
-        self.frame_index = 0
-        self.animation_list = []
-        self.x = x
-        self.y = y 
-        self.health = 100
-        self.max_health = self.health
-        self.current_action = 0
-        self.speed = 1       
-        self.action_list = ["idle", "run", "attack", "die", "stun", "hit"]
-        self.load_animations() 
-        self.image = self.animation_list[self.current_action][self.frame_index]
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.direction = -1
-        self.rect.y = y
-        self.update_time = pygame.time.get_ticks()
-        self.alive = True
-        
-        self.vision_rect = pygame.Rect(self.x - 100, self.y - 100, 100, 20)
-    
-    
-    def load_animations(self):
-        for action in self.action_list:
-            temp_list = []
-            action_path = f"{IMAGES_DIR}/enemy/mushroom/{action}"
-            num_of_frames = len(os.listdir(action_path))
-            for i in range(0, num_of_frames ):
-                img_path = f"{IMAGES_DIR}/enemy/mushroom/{action}/{i}_{action}.png"
-                img = pygame.image.load(img_path)
-                img = pygame.transform.scale(img, (CELL_SIZE , CELL_SIZE ))
-                temp_list.append(img)
-            self.animation_list.append(temp_list)
-    
-    
-    def update(self):
-
-        self.rect.x = self.x - bg_scroll_x
-        self.rect.y = self.y - bg_scroll_y
-            
-        if pygame.time.get_ticks() - self.update_time > 100:
-            self.frame_index += 1
-            self.update_time = pygame.time.get_ticks()
-        
-        if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
-            self.current_action = 0
-            self.frame_index = 0
-        
-        if self.current_action == 3 and self.frame_index >= len(self.animation_list[self.current_action]):
-            self.frame_index = len(self.animation_list[self.current_action]) - 1
-            self.current_action = 3
-        
-        if self.frame_index >= len(self.animation_list[self.current_action]):
-            self.frame_index = 0
-            
-        self.image = self.animation_list[self.current_action][self.frame_index]
-        self.image = pygame.transform.flip(self.image, self.direction == 1, False)
-    
-        self.vision_rect.x = self.rect.x + 50 * self.direction
-        self.vision_rect.y =  self.rect.top + CELL_SIZE // 2
-            
-    def update_animation(self, action):
-        if self.current_action != action:
-            self.current_action = action
-            self.frame_index = 0
-            self.update_time = pygame.time.get_ticks()
-    
-    
-    def attack(self):
-        pass
-    
-    def draw(self):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
-        # draw vision rectangle
-        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
-    
-    def take_damage(self, damage):
-        if not self.alive:
-            return
-        self.health -= damage
-        if self.health <= 0:
-            self.update_animation(3)
-        else:
-            self.update_animation(5)
-    
-    
-    def ai(self):
-        if not self.alive:
-            return
-        
-        
-    
-
 def draw_health_bar(screen, health, position=(10, 10)):
     """Draws the correct health bar based on player's health."""
     if health == 100:
@@ -321,7 +226,7 @@ button = Button(340, 300, 130, 130, button_image)
 def GameIntro():
     while True:
         screen.fill((0, 0, 0))
-        screen.blit(bg_img, (0, 0))
+        screen.blit(intro_bg, (0, 0))
         screen.blit(game_name, (80, 80))
         isClicked = button.update()
         button.draw(screen)
@@ -380,9 +285,10 @@ while running:
     for enemy in enemy_group:
         diff_x = abs(enemy.x - bg_scroll_x - player_x)
         if diff_x < 800:
-            enemy.update()
+            enemy.update(bg_scroll_x, bg_scroll_y)
+            enemy.move( tile_group, bg_scroll_x, bg_scroll_y)
             enemy.draw()
-            enemy.ai()
+            enemy.ai(player)
 
 
     for ocean in ocean_group:
