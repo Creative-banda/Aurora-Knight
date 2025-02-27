@@ -46,6 +46,9 @@ class Player(pygame.sprite.Sprite):
         self.last_blink_time = pygame.time.get_ticks()
         self.isVisible = True  # Player visibility
         
+        self.max_power = 100
+        self.power = self.max_power
+        
         
     def load_animations(self):
         """Loads all animations from assets folder."""

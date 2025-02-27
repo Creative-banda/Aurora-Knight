@@ -15,7 +15,7 @@ bg_scroll_y = 0
 
 def create_map():
     
-    global player
+    global player, bg_scroll_x, bg_scroll_y
     
     """Creates the game map."""
     with open(f"{LEVELS_DIR}/level1.json") as file:
@@ -66,6 +66,9 @@ def create_map():
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
                     boundary_group.add(boundary)
+    
+    bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
+    bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -125,25 +128,39 @@ class Decoration(pygame.sprite.Sprite):
 class Ocean(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/17.png")
-        self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        
+        for i in range(0, 8):
+            image = pygame.image.load(f"{IMAGES_DIR}/maps/Ocean/{i}.png")
+            image = pygame.transform.scale(image, (CELL_SIZE, CELL_SIZE))
+            self.animation_list.append(image)
+
+        self.image = self.animation_list[self.frame_index]
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y + CELL_SIZE // 2
         self.rect.x = x
         self.rect.y = y
-    
+
     def update(self):
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
-    
+        
+        if pygame.time.get_ticks() - self.last_update > 100:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+        
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+        
+        self.image = self.animation_list[self.frame_index]
     
     def check_collision(self,player):
         if self.rect.colliderect(player.rect) and player.alive:
             player.take_damage(30)
-        
-    def draw(self):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+
 
 
 def draw_health_bar(screen, health, position=(10, 10)):
@@ -260,14 +277,6 @@ class Cloud(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
-running = True
-
-
-create_map()
-bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
-bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
-
-
 # Initialize dedicated background parallax variables
 bg_parallax_x = 0
 
@@ -293,12 +302,8 @@ def GameIntro():
 
 
 
-def game_over_screen(screen, background_image):
+def game_over_screen(screen):
     pygame.init()
-    
-    # Load and scale background image
-    bg = pygame.image.load(background_image)
-    bg = pygame.transform.scale(bg, (screen.get_width(), screen.get_height()))
     
     # Font settings
     font = pygame.font.Font(None, 60)
@@ -328,10 +333,35 @@ def game_over_screen(screen, background_image):
                 pygame.quit()
                 exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                running = False  # Restart game
+                print("Restarting game...")
+                reset_game()
+                create_map()
+                running = False
+            
+def reset_game():
+    global bg_scroll_x, bg_scroll_y, bg_parallax_x
+    bg_scroll_x, bg_scroll_y = 0, 0
+    bg_parallax_x = 0
+    
+    tile_group.empty()
+    decoration_group.empty()
+    boundary_group.empty()
+    ocean_group.empty()
+    enemy_group.empty()
+    cloud_group.empty()
+    
+
+
 
 bg_music.play(-1)
 GameIntro()
+
+
+
+running = True
+
+
+create_map()
 
 while running:
     clock.tick(60)
@@ -390,9 +420,11 @@ while running:
     for ocean in ocean_group:
         diff_x = abs(ocean.x - bg_scroll_x - player_x)
         if diff_x < 800:
-            ocean.update()
-            ocean.draw()
             ocean.check_collision(player)
+    
+    
+    ocean_group.update()
+    ocean_group.draw(screen)
     
     cloud_group.update()
     cloud_group.draw(screen)
@@ -413,7 +445,7 @@ while running:
 
 
     if not player.alive:
-        game_over_screen(screen, f"{IMAGES_DIR}/GUI/background.jpg")
+        game_over_screen(screen)
 
     pygame.display.update()
 
