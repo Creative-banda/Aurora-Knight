@@ -60,8 +60,11 @@ def create_map():
                     decoration = Decoration(world_x, world_y, cell, "tree")
                     decoration_group.add(decoration)
                 elif cell == 33:
-                    enemy = Enemy(world_x, world_y)
+                    enemy = Enemy(world_x, world_y, "mushroom")
                     enemy_group.add(enemy)
+                elif cell == 40:
+                    collect = Collectable_Item(world_x, world_y, "heart")
+                    collectable_item_group.add(collect)
                 
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
@@ -143,6 +146,7 @@ class Ocean(pygame.sprite.Sprite):
         self.y = y + CELL_SIZE // 2
         self.rect.x = x
         self.rect.y = y
+        self.last_damage_time = pygame.time.get_ticks()
 
     def update(self):
         self.rect.x = self.x - bg_scroll_x
@@ -158,9 +162,9 @@ class Ocean(pygame.sprite.Sprite):
         self.image = self.animation_list[self.frame_index]
     
     def check_collision(self,player):
-        if self.rect.colliderect(player.rect) and player.alive:
-            player.take_damage(30)
-
+        if self.rect.colliderect(player.rect) and player.isActive and pygame.time.get_ticks() - self.last_damage_time > 300:
+            player.take_damage(20)
+            self.last_damage_time = pygame.time.get_ticks()
 
 
 def draw_health_bar(screen, health, position=(10, 10)):
@@ -242,7 +246,7 @@ class Cloud(pygame.sprite.Sprite):
         self.rect.y = self.y
         self.animation_cooldown = 10
         self.last_update = pygame.time.get_ticks()
-        self.max_appear_time = 5000
+        self.max_appear_time = 3000
         self.created_time = pygame.time.get_ticks()
     
     def load_animation(self):
@@ -277,6 +281,30 @@ class Cloud(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
+class Shield(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.image = pygame.image.load(f"{IMAGES_DIR}/collect_item/shield.png")
+        self.image = pygame.transform.scale(self.image, (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.active = False
+        self.last_active_time = pygame.time.get_ticks()
+        self.cooldown = 5000
+    
+    def update(self, player):
+        self.rect.x = player.rect.x
+        if self.active and pygame.time.get_ticks() - self.last_active_time > self.cooldown:
+            self.active = False
+            self.last_active_time = pygame.time.get_ticks()
+
+    def draw(self):
+        screen.blit(self.image, (10, 60))
+    
+
 # Initialize dedicated background parallax variables
 bg_parallax_x = 0
 
@@ -300,6 +328,53 @@ def GameIntro():
         pygame.display.update()
         clock.tick(60)
 
+
+
+class Collectable_Item(pygame.sprite.Sprite):
+    
+    def __init__(self, x, y, item_type):
+        super().__init__()
+        self.item_type = item_type
+        self.x = x
+        self.y = y + 20
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        self.load_animation()    
+    
+    def load_animation(self):
+        path = f"{IMAGES_DIR}/collect_items/{self.item_type}"
+        num_of_frames = len(os.listdir(path))
+        for i in range(0, num_of_frames):
+            img = pygame.image.load(f"{path}/{self.item_type}-{i}.png")
+            img = pygame.transform.scale(img, (50, 50))
+            self.animation_list.append(img)
+        self.image = self.animation_list[self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
+    def update(self):
+        
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+        
+        if pygame.time.get_ticks() - self.last_update > 80:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+            
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+            
+        self.image = self.animation_list[self.frame_index]
+    
+    def check_collision(self, player):
+        if self.rect.colliderect(player.rect) and player.health < 100:
+            player.health = min(100, player.health + 20)
+            self.kill()
+    
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
 def game_over_screen(screen):
@@ -337,6 +412,7 @@ def game_over_screen(screen):
                 reset_game()
                 create_map()
                 running = False
+                break
             
 def reset_game():
     global bg_scroll_x, bg_scroll_y, bg_parallax_x
@@ -350,8 +426,6 @@ def reset_game():
     enemy_group.empty()
     cloud_group.empty()
     
-
-
 
 bg_music.play(-1)
 GameIntro()
@@ -408,19 +482,24 @@ while running:
             decoration.update()
             decoration.draw()
         
+    enemy_group.update()
     for enemy in enemy_group:
         diff_x = abs(enemy.x - bg_scroll_x - player_x)
         if diff_x < 800:
-            enemy.update()
             enemy.move( tile_group, bg_scroll_x, bg_scroll_y)
-            enemy.draw()
             enemy.ai(player)
+
+    enemy_group.draw(screen)
+
+
+    collectable_item_group.update()
+    collectable_item_group.draw(screen)
+    for collect in collectable_item_group:
+        collect.check_collision(player)
 
 
     for ocean in ocean_group:
-        diff_x = abs(ocean.x - bg_scroll_x - player_x)
-        if diff_x < 800:
-            ocean.check_collision(player)
+        ocean.check_collision(player)
     
     
     ocean_group.update()

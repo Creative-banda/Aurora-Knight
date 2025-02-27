@@ -2,17 +2,19 @@ import pygame, os, random
 from settings import *
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, type):
         super().__init__()
 
         self.frame_index = 0
         self.animation_list = []
         self.x = x
+        self.type = type
         self.y = y 
         self.health = 100
         self.max_health = self.health
         self.current_action = 0
         self.speed = 1       
+        
         self.action_list = ["idle", "run", "attack", "die", "stun", "hit"]
         self.load_animations() 
         self.image = self.animation_list[self.current_action][self.frame_index]
@@ -39,10 +41,10 @@ class Enemy(pygame.sprite.Sprite):
     def load_animations(self):
         for action in self.action_list:
             temp_list = []
-            action_path = f"{IMAGES_DIR}/enemy/mushroom/{action}"
+            action_path = f"{IMAGES_DIR}/enemy/{self.type}/{action}"
             num_of_frames = len(os.listdir(action_path))
             for i in range(0, num_of_frames ):
-                img_path = f"{IMAGES_DIR}/enemy/mushroom/{action}/{i}_{action}.png"
+                img_path = f"{IMAGES_DIR}/enemy/{self.type}/{action}/{i}_{action}.png"
                 img = pygame.image.load(img_path)
                 img = pygame.transform.scale(img, (CELL_SIZE , CELL_SIZE ))
                 temp_list.append(img)
@@ -204,7 +206,7 @@ class Enemy(pygame.sprite.Sprite):
             return
 
         # Check if player is in vision
-        if self.vision_rect.colliderect(player.rect) and player.alive:
+        if self.vision_rect.colliderect(player.rect) and player.isActive:
             # Face the player
             self.direction = 1 if player.rect.x > self.rect.x else -1
 

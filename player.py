@@ -18,6 +18,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 2
         self.InAir = False
         self.alive = True
+        self.isActive = True
         self.health = 100
         self.max_health = self.health
             
@@ -31,6 +32,7 @@ class Player(pygame.sprite.Sprite):
         
         self.target_y = self.screen_height - 100
         self.isAttacking = False
+        self.last_attack = pygame.time.get_ticks()
         self.jump = -8
         self.gravity = 0.3
         
@@ -38,6 +40,7 @@ class Player(pygame.sprite.Sprite):
         
         self.animation_cooldown = 80
         self.last_attack_time = pygame.time.get_ticks()
+
 
         # Hurt Attributes
         self.isHurt = False
@@ -48,6 +51,8 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
+        self.HaveCloud = False
+        self.HaveShield = True
         
         
     def load_animations(self):
@@ -128,13 +133,13 @@ class Player(pygame.sprite.Sprite):
         """Reduces player health."""
         self.health -= amount
         if self.health <= 0:
-            self.alive = False
+            self.isActive = False
             self.update_animation(5)                        
         else:
             self.isHurt = True
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
             self.last_blink_time = self.last_hurt_time  # Start blinking
-        self.vel_y = -3
+        self.vel_y = -5
 
 
     def move(self, ground_group, boundary_group, enemy_group, cloud_group):
@@ -155,7 +160,7 @@ class Player(pygame.sprite.Sprite):
             new_action = 3  # Jumping animation
 
         # Horizontal movement
-        if self.alive and not self.isAttacking:
+        if self.isActive and not self.isAttacking:
             if keys[pygame.K_a]:  
                 dx = -self.speed
                 self.direction = -1
@@ -175,6 +180,7 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_SPACE]:
             if self.InAir:
                 new_action = 6
+                self.last_attack = pygame.time.get_ticks()
             else:
                 new_action = 4
             self.isAttacking = True 
@@ -188,7 +194,7 @@ class Player(pygame.sprite.Sprite):
 
 
         # Update animation if changed
-        if new_action is not None and self.alive:
+        if new_action is not None and self.isActive:
             self.update_animation(new_action)
 
         # Apply gravity
