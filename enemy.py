@@ -206,7 +206,7 @@ class Enemy(pygame.sprite.Sprite):
             return
 
         # Check if player is in vision
-        if self.vision_rect.colliderect(player.rect) and player.isActive:
+        if self.vision_rect.colliderect(player.rect) and player.isActive and not player.HaveShield:
             # Face the player
             self.direction = 1 if player.rect.x > self.rect.x else -1
 

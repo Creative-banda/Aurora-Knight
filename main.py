@@ -284,25 +284,36 @@ class Cloud(pygame.sprite.Sprite):
 class Shield(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.x = x
-        self.y = y
-        self.image = pygame.image.load(f"{IMAGES_DIR}/collect_item/shield.png")
-        self.image = pygame.transform.scale(self.image, (50, 50))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
         self.active = False
-        self.last_active_time = pygame.time.get_ticks()
         self.cooldown = 5000
+        self.animation_list = []    
+        self.last_update = pygame.time.get_ticks()
+        self.frame_index = 0
+        for i in range(0, 24):
+            image = pygame.image.load(f"{IMAGES_DIR}/effects/shield/{i}_shield.png")
+            image = pygame.transform.scale(image, (100, 100))
+            self.animation_list.append(image)
+
+        self.image = self.animation_list[self.frame_index]
     
+        self.rect = self.image.get_rect()
+        self.rect.x = x  
+        self.rect.y = y 
+        
     def update(self, player):
-        self.rect.x = player.rect.x
-        if self.active and pygame.time.get_ticks() - self.last_active_time > self.cooldown:
-            self.active = False
-            self.last_active_time = pygame.time.get_ticks()
+        self.rect.center = (player.rect.centerx, player.rect.centery)
+        if player.isActive and pygame.time.get_ticks() - self.last_update > 50:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+            
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+        
+        self.image = self.animation_list[self.frame_index]
 
     def draw(self):
-        screen.blit(self.image, (10, 60))
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+        # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
     
 
 # Initialize dedicated background parallax variables
@@ -375,6 +386,7 @@ class Collectable_Item(pygame.sprite.Sprite):
     
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+        
 
 
 def game_over_screen(screen):
@@ -436,6 +448,8 @@ running = True
 
 
 create_map()
+
+shield = Shield(player.x, player.y)
 
 while running:
     clock.tick(60)
@@ -507,6 +521,10 @@ while running:
     
     cloud_group.update()
     cloud_group.draw(screen)
+    
+    if player.HaveShield:
+        shield.update(player)
+        shield.draw()
 
     boundary_group.update()
 
