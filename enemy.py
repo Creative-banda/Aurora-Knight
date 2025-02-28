@@ -14,8 +14,16 @@ class Enemy(pygame.sprite.Sprite):
         self.max_health = self.health
         self.current_action = 0
         self.speed = 1       
-        
-        self.action_list = ["idle", "run", "attack", "die", "stun", "hit"]
+        self.action_list = ["idle", "run", "attack", "die","hit"]
+        if self.type == "mushroom":
+            self.size = (CELL_SIZE, CELL_SIZE)
+            self.action_list.append("stun")
+            self.attack_frame = 2
+            self.end_frame = 9
+        else:
+            self.size = (CELL_SIZE * 1.5, CELL_SIZE)
+            self.attack_frame = 0
+            self.end_frame = 5
         self.load_animations() 
         self.image = self.animation_list[self.current_action][self.frame_index]
         self.rect = self.image.get_rect()
@@ -34,6 +42,7 @@ class Enemy(pygame.sprite.Sprite):
         self.attacking = False
         self.attacking_cooldown = 700
         self.last_attack_time = pygame.time.get_ticks()
+    
         
         self.vision_rect = pygame.Rect(self.x + 75, self.y - 100, 150, 20)
     
@@ -46,7 +55,7 @@ class Enemy(pygame.sprite.Sprite):
             for i in range(0, num_of_frames ):
                 img_path = f"{IMAGES_DIR}/enemy/{self.type}/{action}/{i}_{action}.png"
                 img = pygame.image.load(img_path)
-                img = pygame.transform.scale(img, (CELL_SIZE , CELL_SIZE ))
+                img = pygame.transform.scale(img, self.size)
                 temp_list.append(img)
             self.animation_list.append(temp_list)
     
@@ -57,7 +66,7 @@ class Enemy(pygame.sprite.Sprite):
             self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
         
-        if self.current_action == 5 and self.frame_index >= len(self.animation_list[self.current_action]):
+        if self.current_action == 4 and self.frame_index >= len(self.animation_list[self.current_action]):
             self.current_action = 0
             self.frame_index = 0
             self.isHurt = False
@@ -169,25 +178,26 @@ class Enemy(pygame.sprite.Sprite):
     
     def take_damage(self, damage):
         if not self.alive:
-
-            if self.current_action == 4:
+            if self.current_action == 5:
                 self.update_animation(3)
-
             return
         self.health -= damage
         if self.health <= 0:
-            self.update_animation(4)
+            if self.type == "mushroom":
+                self.update_animation(5)
+            else:
+                self.update_animation(3)
             self.alive = False
             self.isHurt = False
             self.stun_time = pygame.time.get_ticks()
         else:
-            self.update_animation(5)
+            self.update_animation(4)
             self.isHurt = True
             self.idling = False
 
 
     def do_attack(self, player):
-        if self.rect.colliderect(player.rect) and self.frame_index > 2 and self.frame_index < 9:
+        if self.rect.colliderect(player.rect) and self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
             player.take_damage(10)
 
 

@@ -20,8 +20,6 @@ from enemy import Enemy
 # GAME CLASSES
 # ──────────────────────────────────
 
-
-
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
         super().__init__()
@@ -32,7 +30,7 @@ class Tile(pygame.sprite.Sprite):
         self.y = y
         self.rect.x = x
         self.rect.y = y
-    
+
     def update(self):
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
@@ -166,13 +164,29 @@ class Collectable_Item(pygame.sprite.Sprite):
         self.image = self.animation_list[self.frame_index]
     
     def check_collision(self, player):
-        if self.rect.colliderect(player.rect) and player.health < 100:
-            player.health = min(100, player.health + 20)
-            self.kill()
-    
+        if self.rect.colliderect(player.rect) :
+            
+            if self.item_type == "heart" and player.health < 100:           
+                player.health = min(100, player.health + 20)
+                self.kill()
+            
+            elif self.item_type == "cloud_power":
+                player.HaveCloud = True
+                self.kill()
+                
+            elif self.item_type == "shield":
+                player.HaveShield = True
+                shield.created_time = pygame.time.get_ticks()
+                self.kill()
+            
+            elif self.item_type == "slider_power":
+                player.HaveSlider = True
+                self.kill()
+        
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
-  
+
+
 class Cloud(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -244,6 +258,10 @@ class Shield(pygame.sprite.Sprite):
         self.rect.x = x  
         self.rect.y = y 
         
+        self.created_time = pygame.time.get_ticks()
+        self.max_time = 5000
+        
+        
     def update(self, player):
         self.rect.center = (player.rect.centerx, player.rect.centery)
         if  pygame.time.get_ticks() - self.last_update > 50:
@@ -252,6 +270,10 @@ class Shield(pygame.sprite.Sprite):
             
         if self.frame_index >= len(self.animation_list):
             self.frame_index = 0
+        
+        
+        if pygame.time.get_ticks() - self.created_time > self.max_time:
+            player.HaveShield = False
         
         self.image = self.animation_list[self.frame_index]
 
@@ -298,7 +320,7 @@ class Glider(pygame.sprite.Sprite):
         
             
     def removeGlider(self):
-        player.HaveGlider = False
+        player.onGlider = False
         player.update_animation(3)
         
 
@@ -409,7 +431,14 @@ def create_map():
                 elif cell == 33:
                     enemy = Enemy(world_x, world_y, "mushroom")
                     enemy_group.add(enemy)
-                elif cell == 40:
+                elif cell == 35:
+                    enemy = Enemy(world_x, world_y, "forest_horse")
+                    enemy_group.add(enemy)
+                elif cell == 36:
+                    collect = Collectable_Item(world_x, world_y, "cloud_power")
+                    collectable_item_group.add(collect)
+                
+                elif cell == 37:
                     collect = Collectable_Item(world_x, world_y, "heart")
                     collectable_item_group.add(collect)
                 
@@ -419,8 +448,6 @@ def create_map():
     
     bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
     bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
-
-
 
 
 def GameIntro():
@@ -476,7 +503,8 @@ def game_over_screen(screen):
                 create_map()
                 running = False
                 break
-            
+
+     
 def reset_game():
     global bg_scroll_x, bg_scroll_y, bg_parallax_x
     bg_scroll_x, bg_scroll_y = 0, 0
@@ -530,6 +558,10 @@ while running:
     # Get player movement first
     x, y = player.move(tile_group, boundary_group, enemy_group, cloud_group)
     
+    if not player.alive:
+        game_over_screen(screen)
+        print("Game Over")
+    
     # Update main map scrolling (keep this as is)
     bg_scroll_x += x
     bg_scroll_y += y
@@ -549,15 +581,15 @@ while running:
             running = False
         
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e and player.InAir:
+            if event.key == pygame.K_e and player.InAir and player.HaveCloud:
                 cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
                 cloud_group.add(cloud)
-            if event.key == pygame.K_1 and player.alive:
-                if player.HaveGlider:
+            if event.key == pygame.K_1 and player.alive and player.HaveGlider:
+                if player.onGlider:
                     glider.removeGlider()
                 else:
                     if player.InAir:
-                        player.HaveGlider = True
+                        player.onGlider = True
                         glider.direction = player.direction
                         glider.created_time = pygame.time.get_ticks()
                         player.update_animation(0)
@@ -605,7 +637,8 @@ while running:
     if player.HaveShield:
         shield.update(player)
         shield.draw()
-    if player.HaveGlider:
+        
+    if player.onGlider:
         glider.update()
         glider.draw()
 
@@ -623,9 +656,6 @@ while running:
     fps_text = pygame.font.Font(None, 30).render(fps, True, pygame.Color(BLACK))
     screen.blit(fps_text, (SCREEN_WIDTH // 2, 10))
 
-
-    if not player.alive:
-        game_over_screen(screen)
 
     pygame.display.update()
 

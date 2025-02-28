@@ -51,9 +51,10 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
-        self.HaveCloud = False
+        self.HaveCloud = True
         self.HaveShield = False
-        self.HaveGlider = False
+        self.HaveGlider = True
+        self.onGlider = False
         
         
     def load_animations(self):
@@ -135,11 +136,14 @@ class Player(pygame.sprite.Sprite):
         self.health -= amount
         if self.health <= 0:
             self.isActive = False
-            self.update_animation(5)                        
+            self.update_animation(5) 
+            print("Player is dead")                   
         else:
             self.isHurt = True
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
             self.last_blink_time = self.last_hurt_time  # Start blinking
+            self.isAttacking = False
+            print("Player is hurt")
         self.vel_y = -5
 
 
@@ -152,18 +156,18 @@ class Player(pygame.sprite.Sprite):
         new_action = None
 
         # Adjust speed based on air status
-        if not self.HaveGlider:
+        if not self.onGlider:
             self.speed = 4 if self.InAir else 2
 
         # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir and not self.HaveGlider:
+        if keys[pygame.K_w] and not self.InAir and not self.onGlider:
             self.InAir = True
             self.vel_y = self.jump
             new_action = 3  # Jumping animation
     
 
         # Horizontal movement
-        if self.isActive and not self.isAttacking and not self.HaveGlider:
+        if self.isActive and not self.isAttacking and not self.onGlider:
             if keys[pygame.K_a] :  
                 dx = -self.speed
                 self.direction = -1
@@ -197,7 +201,7 @@ class Player(pygame.sprite.Sprite):
             new_action = 0  # Idle animation
         
 
-        if self.HaveGlider:
+        if self.onGlider:
             if keys[pygame.K_s]:
                 self.vel_y = self.speed
             elif keys[pygame.K_w]:
@@ -206,11 +210,11 @@ class Player(pygame.sprite.Sprite):
         
 
         # Update animation if changed
-        if new_action is not None and self.isActive and not self.HaveGlider:
+        if new_action is not None and self.isActive and not self.onGlider:
             self.update_animation(new_action)
 
         # Apply gravity
-        if not self.HaveGlider:
+        if not self.onGlider:
             self.vel_y += self.gravity
         dy = self.vel_y
 
