@@ -51,8 +51,10 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
-        self.HaveCloud = False
+        self.HaveCloud = True
         self.HaveShield = False
+        self.HaveGlider = True
+        self.onGlider = False
         
         
     def load_animations(self):
@@ -74,7 +76,7 @@ class Player(pygame.sprite.Sprite):
                     print(f"Warning: Missing file: {img_path}")
                     continue
                 
-                img = pygame.image.load(img_path)
+                img = pygame.image.load(img_path).convert_alpha()
                 img = pygame.transform.scale(img, (60, 60))
 
                 temp_list.append(img)
@@ -134,11 +136,14 @@ class Player(pygame.sprite.Sprite):
         self.health -= amount
         if self.health <= 0:
             self.isActive = False
-            self.update_animation(5)                        
+            self.update_animation(5) 
+            print("Player is dead")                   
         else:
             self.isHurt = True
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
             self.last_blink_time = self.last_hurt_time  # Start blinking
+            self.isAttacking = False
+            print("Player is hurt")
         self.vel_y = -5
 
 
@@ -151,31 +156,35 @@ class Player(pygame.sprite.Sprite):
         new_action = None
 
         # Adjust speed based on air status
-        self.speed = 4 if self.InAir else 2
+        if not self.onGlider:
+            self.speed = 4 if self.InAir else 2
 
         # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir:
+        if keys[pygame.K_w] and not self.InAir and not self.onGlider:
             self.InAir = True
             self.vel_y = self.jump
             new_action = 3  # Jumping animation
+    
 
         # Horizontal movement
-        if self.isActive and not self.isAttacking:
-            if keys[pygame.K_a]:  
+        if self.isActive and not self.isAttacking and not self.onGlider:
+            if keys[pygame.K_a] :  
                 dx = -self.speed
                 self.direction = -1
-            elif keys[pygame.K_d]:
+            elif keys[pygame.K_d] :
                 dx = self.speed
                 self.direction = 1
             
             if not self.InAir:
-                if keys[pygame.K_LSHIFT]:
+                if keys[pygame.K_LSHIFT] :
                     dx *= 3  # Sprinting
                     new_action = 1  # Running animation
                     self.animation_cooldown = 50
                 else:
                     new_action = 2  # Walking animation
                     self.animation_cooldown = 80
+        
+
 
         if keys[pygame.K_SPACE]:
             if self.InAir:
@@ -192,13 +201,21 @@ class Player(pygame.sprite.Sprite):
             new_action = 0  # Idle animation
         
 
+        if self.onGlider:
+            if keys[pygame.K_s]:
+                self.vel_y = self.speed
+            elif keys[pygame.K_w]:
+                self.vel_y = -self.speed
+            dx = self.speed * 2 * self.direction
+        
 
         # Update animation if changed
-        if new_action is not None and self.isActive:
+        if new_action is not None and self.isActive and not self.onGlider:
             self.update_animation(new_action)
 
         # Apply gravity
-        self.vel_y += self.gravity
+        if not self.onGlider:
+            self.vel_y += self.gravity
         dy = self.vel_y
 
         # --- Handle Collisions --- #

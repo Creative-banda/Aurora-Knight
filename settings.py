@@ -31,6 +31,7 @@ ocean_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 cloud_group = pygame.sprite.Group()
 collectable_item_group = pygame.sprite.Group()
+smoke_group = pygame.sprite.Group()
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
 pygame.display.set_caption("Aurora-Knight")
@@ -47,15 +48,15 @@ SOUND_DIR = f"{ASSETS_DIR}/sound_effects"
  
 # Images
 
-button_image = pygame.image.load(f"{IMAGES_DIR}/GUI/play.png")
+button_image = pygame.image.load(f"{IMAGES_DIR}/GUI/play.png").convert_alpha()
 
-game_name = pygame.image.load(f"{IMAGES_DIR}/GUI/game_name.png")
+game_name = pygame.image.load(f"{IMAGES_DIR}/GUI/game_name.png").convert_alpha()
 game_name = pygame.transform.scale(game_name, (700, 250))
 
-bg_img = pygame.image.load(f"{IMAGES_DIR}/maps/forest/BG/BG.png")
+bg_img = pygame.image.load(f"{IMAGES_DIR}/maps/forest/BG/BG.png").convert_alpha()
 bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg")
+intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg").convert_alpha()
 intro_bg = pygame.transform.scale(intro_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Sound Effects

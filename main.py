@@ -1,3 +1,14 @@
+"""
+====================================
+    Aurora Knight - Main Script
+====================================
+A 2D platformer game built with Pygame.
+"""
+
+# ──────────────────────────────────
+# IMPORTS
+# ──────────────────────────────────
+
 import pygame
 import sys, json, os
 from settings import *
@@ -5,86 +16,21 @@ from player import Player
 from enemy import Enemy
 
 
-# Clock 
-clock = pygame.time.Clock()
-
-
-bg_scroll_x = 0
-bg_scroll_y = 0
-
-
-def create_map():
-    
-    global player, bg_scroll_x, bg_scroll_y
-    
-    """Creates the game map."""
-    with open(f"{LEVELS_DIR}/level1.json") as file:
-        maze_layout = json.load(file)
-    
-
-    for layer in maze_layout:
-        for y, row in enumerate(layer):
-            for x, cell in enumerate(row):
-                world_x = x * CELL_SIZE
-                world_y = y * CELL_SIZE
-                if cell > 0 and cell <= 16:
-                    tile = Tile(world_x, world_y, cell)
-                    tile_group.add(tile)
-                elif cell == 17:
-                    ocean = Ocean(world_x, world_y)
-                    ocean_group.add(ocean)
-                elif cell == 18:
-                    decoration = Decoration(world_x, world_y, cell, "water")
-                    decoration_group.add(decoration)
-                elif cell == 19:
-                    player = Player(world_x, world_y)
-                elif cell >= 20 and cell <= 23:
-                    decoration = Decoration(world_x, world_y, cell, "bush")
-                    decoration_group.add(decoration)
-                elif cell == 24:
-                    decoration = Decoration(world_x, world_y, cell, "box")
-                    decoration_group.add(decoration)
-                elif cell == 25 or cell == 26:
-                    decoration = Decoration(world_x, world_y, cell, "mushroom")
-                    decoration_group.add(decoration)
-                elif cell == 27 or cell == 28:
-                    decoration = Decoration(world_x, world_y, cell, "board")
-                    decoration_group.add(decoration)
-                elif cell == 29:
-                    decoration = Decoration(world_x, world_y, cell, "rock")
-                    decoration_group.add(decoration)
-                elif cell == 30:
-                    decoration = Decoration(world_x, world_y, cell, "cut_tree")
-                    decoration_group.add(decoration)
-                elif cell == 31 or cell == 32:
-                    decoration = Decoration(world_x, world_y, cell, "tree")
-                    decoration_group.add(decoration)
-                elif cell == 33:
-                    enemy = Enemy(world_x, world_y, "mushroom")
-                    enemy_group.add(enemy)
-                elif cell == 40:
-                    collect = Collectable_Item(world_x, world_y, "heart")
-                    collectable_item_group.add(collect)
-                
-                elif cell == 100:
-                    boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
-                    boundary_group.add(boundary)
-    
-    bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
-    bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
-
+# ──────────────────────────────────
+# GAME CLASSES
+# ──────────────────────────────────
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
         super().__init__()
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{cell}.png")
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{cell}.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
         self.rect.x = x
         self.rect.y = y
-    
+
     def update(self):
         self.rect.x = self.x - bg_scroll_x
         self.rect.y = self.y - bg_scroll_y
@@ -136,7 +82,7 @@ class Ocean(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         
         for i in range(0, 8):
-            image = pygame.image.load(f"{IMAGES_DIR}/maps/Ocean/{i}.png")
+            image = pygame.image.load(f"{IMAGES_DIR}/maps/Ocean/{i}.png").convert_alpha()
             image = pygame.transform.scale(image, (CELL_SIZE, CELL_SIZE))
             self.animation_list.append(image)
 
@@ -167,23 +113,6 @@ class Ocean(pygame.sprite.Sprite):
             self.last_damage_time = pygame.time.get_ticks()
 
 
-def draw_health_bar(screen, health, position=(10, 10)):
-    """Draws the correct health bar based on player's health."""
-    if health == 100:
-        index = 5
-    elif 75 <= health <= 99:
-        index = 4
-    elif 50 <= health <= 74:
-        index = 3
-    elif 25 <= health <= 49:
-        index = 2
-    elif 2 <= health <= 24:
-        index = 1
-    else:  # health == 0
-        index = 0
-    screen.blit(health_bars[index], position)
-        
-
 class Boundary(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
         super().__init__()
@@ -196,37 +125,66 @@ class Boundary(pygame.sprite.Sprite):
         self.rect.y = self.y -  bg_scroll_y
     
 
-class Button():
-    def __init__(self, x, y, width, height, image, ):
+class Collectable_Item(pygame.sprite.Sprite):
+    
+    def __init__(self, x, y, item_type):
+        super().__init__()
+        self.item_type = item_type
         self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.original_image = pygame.transform.scale(image, (width, height))
-        self.hover_image = pygame.transform.scale(image, (int(width * 0.9), int(height * 0.9)))  # 10% smaller
-        self.image = self.original_image
-        self.rect = self.original_image.get_rect(topleft=(x, y))
-        self.clicked = False
-
+        self.y = y + 20
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        self.load_animation()    
+    
+    def load_animation(self):
+        path = f"{IMAGES_DIR}/collect_items/{self.item_type}"
+        num_of_frames = len(os.listdir(path))
+        for i in range(0, num_of_frames):
+            img = pygame.image.load(f"{path}/{self.item_type}-{i}.png").convert_alpha()
+            img = pygame.transform.scale(img, (50, 50))
+            self.animation_list.append(img)
+        self.image = self.animation_list[self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
     def update(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_click = pygame.mouse.get_pressed()
-
-        if self.rect.collidepoint(mouse_pos):  # Check if mouse is over the button
-            self.image = self.hover_image  # Change to smaller image
-            # Adjust position so it remains centered
-            self.rect = self.hover_image.get_rect(center=self.rect.center)
-            if mouse_click[0] :  # Check if left mouse button is clicked
-                return True
-        else:
-            self.image = self.original_image  # Reset to normal size
-            self.rect = self.original_image.get_rect(topleft=(self.x, self.y))
         
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
         
-        return False
-
-    def draw(self, screen):
-        screen.blit(self.image, self.rect.topleft)
+        if pygame.time.get_ticks() - self.last_update > 80:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+            
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+            
+        self.image = self.animation_list[self.frame_index]
+    
+    def check_collision(self, player):
+        if self.rect.colliderect(player.rect) :
+            
+            if self.item_type == "heart" and player.health < 100:           
+                player.health = min(100, player.health + 20)
+                self.kill()
+            
+            elif self.item_type == "cloud_power":
+                player.HaveCloud = True
+                self.kill()
+                
+            elif self.item_type == "shield":
+                player.HaveShield = True
+                shield.created_time = pygame.time.get_ticks()
+                self.kill()
+            
+            elif self.item_type == "slider_power":
+                player.HaveSlider = True
+                self.kill()
+        
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -255,7 +213,7 @@ class Cloud(pygame.sprite.Sprite):
             action_path = f"{IMAGES_DIR}/cloud/{action}"
             num_of_frames = len(os.listdir(action_path))
             for i in range(0, num_of_frames):
-                img = pygame.image.load(f"{IMAGES_DIR}/cloud/{action}/{i}.png")
+                img = pygame.image.load(f"{IMAGES_DIR}/cloud/{action}/{i}.png").convert_alpha()
                 temp_list.append(img)
             self.animation_list.append(temp_list)
     
@@ -290,7 +248,7 @@ class Shield(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         self.frame_index = 0
         for i in range(0, 24):
-            image = pygame.image.load(f"{IMAGES_DIR}/effects/shield/{i}_shield.png")
+            image = pygame.image.load(f"{IMAGES_DIR}/effects/shield/{i}_shield.png").convert_alpha()
             image = pygame.transform.scale(image, (100, 100))
             self.animation_list.append(image)
 
@@ -300,27 +258,207 @@ class Shield(pygame.sprite.Sprite):
         self.rect.x = x  
         self.rect.y = y 
         
+        self.created_time = pygame.time.get_ticks()
+        self.max_time = 5000
+        
+        
     def update(self, player):
         self.rect.center = (player.rect.centerx, player.rect.centery)
-        if player.isActive and pygame.time.get_ticks() - self.last_update > 50:
+        if  pygame.time.get_ticks() - self.last_update > 50:
             self.frame_index += 1
             self.last_update = pygame.time.get_ticks()
             
         if self.frame_index >= len(self.animation_list):
             self.frame_index = 0
         
+        
+        if pygame.time.get_ticks() - self.created_time > self.max_time:
+            player.HaveShield = False
+        
         self.image = self.animation_list[self.frame_index]
 
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+
+
+class Glider(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.animation_cool_down = 100
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        self.load_animation()
+        self.timeout = 5000
+        self.created_time = pygame.time.get_ticks()
+        self.direction = 1
+        self.isSmokeEnded = False
+        
+        # Load smoke animation
+        self.smoke_animation_list = []
+        for i in range(0, 9):
+            img = pygame.image.load(f"{IMAGES_DIR}/effects/cloud/0{i}_cloud.png")
+            img = pygame.transform.scale(img, (120, 120))
+            self.smoke_animation_list.append(img)
+    
+    def load_animation(self):
+        for i in range(0, 9):
+            img = pygame.image.load(f"{IMAGES_DIR}/effects/leaf/0{i}_leaf.png")
+            img = pygame.transform.scale(img, (100, 50))
+            self.animation_list.append(img)
+        self.image = self.animation_list[self.frame_index]
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.center = (player.rect.centerx, player.rect.centery + 30)
+        
+        if pygame.time.get_ticks() - self.last_update > self.animation_cool_down:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+            self.isSmokeEnded = True
+        
+        
+        if pygame.time.get_ticks() - self.created_time > self.timeout:
+            self.removeGlider()
+        
+        self.image = self.animation_list[self.frame_index]
+        self.image = pygame.transform.flip(self.image, self.direction == -1, False)
+        
+            
+    def removeGlider(self):
+        player.onGlider = False
+        player.update_animation(3)
+        
+
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+        if not self.isSmokeEnded:
+            screen.blit(self.smoke_animation_list[self.frame_index], (self.rect.x, self.rect.y - 70))
+
+
+class Button():
+    def __init__(self, x, y, width, height, image, ):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.original_image = pygame.transform.scale(image, (width, height))
+        self.hover_image = pygame.transform.scale(image, (int(width * 0.9), int(height * 0.9)))  # 10% smaller
+        self.image = self.original_image
+        self.rect = self.original_image.get_rect(topleft=(x, y))
+        self.clicked = False
+
+    def update(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_click = pygame.mouse.get_pressed()
+
+        if self.rect.collidepoint(mouse_pos):  # Check if mouse is over the button
+            self.image = self.hover_image  # Change to smaller image
+            # Adjust position so it remains centered
+            self.rect = self.hover_image.get_rect(center=self.rect.center)
+            if mouse_click[0] :  # Check if left mouse button is clicked
+                return True
+        else:
+            self.image = self.original_image  # Reset to normal size
+            self.rect = self.original_image.get_rect(topleft=(self.x, self.y))
+        
+        
+        return False
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+
+# ──────────────────────────────────
+# SUPPORTIVE FUNCTIONS
+# ──────────────────────────────────
+
+def draw_health_bar(screen, health, position=(10, 10)):
+    """Draws the correct health bar based on player's health."""
+    if health == 100:
+        index = 5
+    elif 75 <= health <= 99:
+        index = 4
+    elif 50 <= health <= 74:
+        index = 3
+    elif 25 <= health <= 49:
+        index = 2
+    elif 2 <= health <= 24:
+        index = 1
+    else:  # health == 0
+        index = 0
+    screen.blit(health_bars[index], position)
+        
+
+def create_map():
+    
+    global player, bg_scroll_x, bg_scroll_y
+    
+    """Creates the game map."""
+    with open(f"{LEVELS_DIR}/level1.json") as file:
+        maze_layout = json.load(file)
     
 
-# Initialize dedicated background parallax variables
-bg_parallax_x = 0
-
-# Create button instance
-button = Button(340, 300, 130, 130, button_image)
+    for layer in maze_layout:
+        for y, row in enumerate(layer):
+            for x, cell in enumerate(row):
+                world_x = x * CELL_SIZE
+                world_y = y * CELL_SIZE
+                if cell > 0 and cell <= 16:
+                    tile = Tile(world_x, world_y, cell)
+                    tile_group.add(tile)
+                elif cell == 17:
+                    ocean = Ocean(world_x, world_y)
+                    ocean_group.add(ocean)
+                elif cell == 18:
+                    decoration = Decoration(world_x, world_y, cell, "water")
+                    decoration_group.add(decoration)
+                elif cell == 19:
+                    player = Player(world_x, world_y)
+                elif cell >= 20 and cell <= 23:
+                    decoration = Decoration(world_x, world_y, cell, "bush")
+                    decoration_group.add(decoration)
+                elif cell == 24:
+                    decoration = Decoration(world_x, world_y, cell, "box")
+                    decoration_group.add(decoration)
+                elif cell == 25 or cell == 26:
+                    decoration = Decoration(world_x, world_y, cell, "mushroom")
+                    decoration_group.add(decoration)
+                elif cell == 27 or cell == 28:
+                    decoration = Decoration(world_x, world_y, cell, "board")
+                    decoration_group.add(decoration)
+                elif cell == 29:
+                    decoration = Decoration(world_x, world_y, cell, "rock")
+                    decoration_group.add(decoration)
+                elif cell == 30:
+                    decoration = Decoration(world_x, world_y, cell, "cut_tree")
+                    decoration_group.add(decoration)
+                elif cell == 31 or cell == 32:
+                    decoration = Decoration(world_x, world_y, cell, "tree")
+                    decoration_group.add(decoration)
+                elif cell == 33:
+                    enemy = Enemy(world_x, world_y, "mushroom")
+                    enemy_group.add(enemy)
+                elif cell == 35:
+                    enemy = Enemy(world_x, world_y, "forest_horse")
+                    enemy_group.add(enemy)
+                elif cell == 36:
+                    collect = Collectable_Item(world_x, world_y, "cloud_power")
+                    collectable_item_group.add(collect)
+                
+                elif cell == 37:
+                    collect = Collectable_Item(world_x, world_y, "heart")
+                    collectable_item_group.add(collect)
+                
+                elif cell == 100:
+                    boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
+                    boundary_group.add(boundary)
+    
+    bg_scroll_x = player.rect.x - (SCREEN_WIDTH // 2 - player.rect.width // 2)
+    bg_scroll_y = player.rect.y - (SCREEN_HEIGHT // 2 - player.rect.height // 2)
 
 
 def GameIntro():
@@ -338,56 +476,7 @@ def GameIntro():
             break
         pygame.display.update()
         clock.tick(60)
-
-
-
-class Collectable_Item(pygame.sprite.Sprite):
-    
-    def __init__(self, x, y, item_type):
-        super().__init__()
-        self.item_type = item_type
-        self.x = x
-        self.y = y + 20
-        self.animation_list = []
-        self.frame_index = 0
-        self.last_update = pygame.time.get_ticks()
-        self.load_animation()    
-    
-    def load_animation(self):
-        path = f"{IMAGES_DIR}/collect_items/{self.item_type}"
-        num_of_frames = len(os.listdir(path))
-        for i in range(0, num_of_frames):
-            img = pygame.image.load(f"{path}/{self.item_type}-{i}.png")
-            img = pygame.transform.scale(img, (50, 50))
-            self.animation_list.append(img)
-        self.image = self.animation_list[self.frame_index]
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
-        
-    def update(self):
-        
-        self.rect.x = self.x - bg_scroll_x
-        self.rect.y = self.y - bg_scroll_y
-        
-        if pygame.time.get_ticks() - self.last_update > 80:
-            self.frame_index += 1
-            self.last_update = pygame.time.get_ticks()
-            
-        if self.frame_index >= len(self.animation_list):
-            self.frame_index = 0
-            
-        self.image = self.animation_list[self.frame_index]
-    
-    def check_collision(self, player):
-        if self.rect.colliderect(player.rect) and player.health < 100:
-            player.health = min(100, player.health + 20)
-            self.kill()
-    
-    def draw(self):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
-        
-
+      
 
 def game_over_screen(screen):
     pygame.init()
@@ -425,7 +514,8 @@ def game_over_screen(screen):
                 create_map()
                 running = False
                 break
-            
+
+     
 def reset_game():
     global bg_scroll_x, bg_scroll_y, bg_parallax_x
     bg_scroll_x, bg_scroll_y = 0, 0
@@ -439,17 +529,37 @@ def reset_game():
     cloud_group.empty()
     
 
-bg_music.play(-1)
-GameIntro()
-
-
+# ──────────────────────────────────
+# GAME VARIABLES & OBJECTS
+# ──────────────────────────────────
 
 running = True
 
+# Clock 
+clock = pygame.time.Clock()
+
+bg_scroll_x = 0
+bg_scroll_y = 0
+
+# Initialize dedicated background parallax variables
+bg_parallax_x = 0
+
+# Create button instance
+button = Button(340, 300, 130, 130, button_image)
+
+
+bg_music.play(-1)
+GameIntro()
 
 create_map()
 
 shield = Shield(player.x, player.y)
+glider = Glider()
+
+
+# ──────────────────────────────────
+# 🎮 MAIN GAME LOOP
+# ──────────────────────────────────
 
 while running:
     clock.tick(60)
@@ -458,6 +568,10 @@ while running:
 
     # Get player movement first
     x, y = player.move(tile_group, boundary_group, enemy_group, cloud_group)
+    
+    if not player.alive:
+        game_over_screen(screen)
+        print("Game Over")
     
     # Update main map scrolling (keep this as is)
     bg_scroll_x += x
@@ -478,9 +592,20 @@ while running:
             running = False
         
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e and player.InAir:
+            if event.key == pygame.K_e and player.InAir and player.HaveCloud:
                 cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
                 cloud_group.add(cloud)
+            if event.key == pygame.K_1 and player.alive and player.HaveGlider:
+                if player.onGlider:
+                    glider.removeGlider()
+                else:
+                    if player.InAir:
+                        player.onGlider = True
+                        glider.direction = player.direction
+                        glider.created_time = pygame.time.get_ticks()
+                        glider.frame_index = 0
+                        glider.isSmokeEnded = False
+                        player.update_animation(0)
     
     player_x = player.rect.x 
     
@@ -525,13 +650,15 @@ while running:
     if player.HaveShield:
         shield.update(player)
         shield.draw()
-
+        
     boundary_group.update()
-
-
     
     player.update()
     player.draw()
+    
+    if player.onGlider:
+        glider.update()
+        glider.draw()
     # print(player.rect.x, player.rect.y)
     draw_health_bar(screen, player.health)
     
@@ -540,9 +667,6 @@ while running:
     fps_text = pygame.font.Font(None, 30).render(fps, True, pygame.Color(BLACK))
     screen.blit(fps_text, (SCREEN_WIDTH // 2, 10))
 
-
-    if not player.alive:
-        game_over_screen(screen)
 
     pygame.display.update()
 
