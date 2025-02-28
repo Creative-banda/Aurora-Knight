@@ -302,7 +302,7 @@ class Shield(pygame.sprite.Sprite):
         
     def update(self, player):
         self.rect.center = (player.rect.centerx, player.rect.centery)
-        if player.isActive and pygame.time.get_ticks() - self.last_update > 50:
+        if  pygame.time.get_ticks() - self.last_update > 50:
             self.frame_index += 1
             self.last_update = pygame.time.get_ticks()
             
@@ -314,7 +314,51 @@ class Shield(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+
+
+class Glider(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.animation_cool_down = 100
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        self.load_animation()
+        self.timeout = 5000
+        self.created_time = pygame.time.get_ticks()
     
+    def load_animation(self):
+        for i in range(0, 9):
+            img = pygame.image.load(f"{IMAGES_DIR}/effects/leaf/0{i}_leaf.png")
+            img = pygame.transform.scale(img, (100, 50))
+            self.animation_list.append(img)
+        self.image = self.animation_list[self.frame_index]
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.center = (player.rect.centerx, player.rect.centery + 30)
+        
+        if pygame.time.get_ticks() - self.last_update > self.animation_cool_down:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+        
+        
+        if pygame.time.get_ticks() - self.created_time > self.timeout:
+            self.removeGlider()
+        
+        self.image = self.animation_list[self.frame_index]
+        
+            
+    def removeGlider(self):
+        player.HaveGlider = False
+        player.update_animation(3)
+        
+
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
 
 # Initialize dedicated background parallax variables
 bg_parallax_x = 0
@@ -338,7 +382,6 @@ def GameIntro():
             break
         pygame.display.update()
         clock.tick(60)
-
 
 
 class Collectable_Item(pygame.sprite.Sprite):
@@ -387,7 +430,6 @@ class Collectable_Item(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         
-
 
 def game_over_screen(screen):
     pygame.init()
@@ -450,6 +492,7 @@ running = True
 create_map()
 
 shield = Shield(player.x, player.y)
+glider = Glider()
 
 while running:
     clock.tick(60)
@@ -481,6 +524,13 @@ while running:
             if event.key == pygame.K_e and player.InAir:
                 cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
                 cloud_group.add(cloud)
+            if event.key == pygame.K_1 and player.alive and player.InAir:
+                if player.HaveGlider:
+                    glider.removeGlider()
+                else:
+                    player.HaveGlider = True
+                    glider.created_time = pygame.time.get_ticks()
+                    player.update_animation(0)
     
     player_x = player.rect.x 
     
@@ -525,6 +575,9 @@ while running:
     if player.HaveShield:
         shield.update(player)
         shield.draw()
+    if player.HaveGlider:
+        glider.update()
+        glider.draw()
 
     boundary_group.update()
 

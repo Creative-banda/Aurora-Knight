@@ -52,7 +52,8 @@ class Player(pygame.sprite.Sprite):
         self.max_power = 100
         self.power = self.max_power
         self.HaveCloud = False
-        self.HaveShield = True
+        self.HaveShield = False
+        self.HaveGlider = False
         
         
     def load_animations(self):
@@ -151,31 +152,35 @@ class Player(pygame.sprite.Sprite):
         new_action = None
 
         # Adjust speed based on air status
-        self.speed = 4 if self.InAir else 2
+        if not self.HaveGlider:
+            self.speed = 4 if self.InAir else 2
 
         # Handle Jumping
-        if keys[pygame.K_w] and not self.InAir:
+        if keys[pygame.K_w] and not self.InAir and not self.HaveGlider:
             self.InAir = True
             self.vel_y = self.jump
             new_action = 3  # Jumping animation
+    
 
         # Horizontal movement
-        if self.isActive and not self.isAttacking:
-            if keys[pygame.K_a]:  
+        if self.isActive and not self.isAttacking and not self.HaveGlider:
+            if keys[pygame.K_a] :  
                 dx = -self.speed
                 self.direction = -1
-            elif keys[pygame.K_d]:
+            elif keys[pygame.K_d] :
                 dx = self.speed
                 self.direction = 1
             
             if not self.InAir:
-                if keys[pygame.K_LSHIFT]:
+                if keys[pygame.K_LSHIFT] :
                     dx *= 3  # Sprinting
                     new_action = 1  # Running animation
                     self.animation_cooldown = 50
                 else:
                     new_action = 2  # Walking animation
                     self.animation_cooldown = 80
+        
+
 
         if keys[pygame.K_SPACE]:
             if self.InAir:
@@ -192,13 +197,22 @@ class Player(pygame.sprite.Sprite):
             new_action = 0  # Idle animation
         
 
+        if self.HaveGlider:
+            if keys[pygame.K_s]:
+                self.vel_y = self.speed
+            elif keys[pygame.K_w]:
+                self.vel_y = -self.speed
+            print("Down ")
+            dx = self.speed * 2 * self.direction
+        
 
         # Update animation if changed
-        if new_action is not None and self.isActive:
+        if new_action is not None and self.isActive and not self.HaveGlider:
             self.update_animation(new_action)
 
         # Apply gravity
-        self.vel_y += self.gravity
+        if not self.HaveGlider:
+            self.vel_y += self.gravity
         dy = self.vel_y
 
         # --- Handle Collisions --- #
