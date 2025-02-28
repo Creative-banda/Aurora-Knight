@@ -1,56 +1,49 @@
-🌌 Aurora Knight
-================
+# 🌌 Aurora Knight
 
-**Aurora Knight** is a charming and whimsical 2D adventure platformer featuring a cute knight on a mystical journey. The game focuses on **smooth movement, magical powers, and engaging exploration** across beautifully crafted levels. Unlike traditional action games, Aurora Knight embraces a **calm, fantasy-like experience** with creative traversal mechanics.
+**Aurora Knight** is a charming and whimsical 2D adventure platformer featuring a cute knight on a mystical journey. The game focuses on smooth movement, magical powers, and engaging exploration across beautifully crafted levels. Unlike traditional action games, Aurora Knight embraces a calm, fantasy-like experience with creative traversal mechanics.
 
-✨ Features (Currently Implemented)
-----------------------------------
+## ✨ Features (Currently Implemented)
+### 🏰 Level Design
+- **Fully Designed Level 1:** A complete map with platforms, obstacles, and immersive visuals.
 
--   **Fully Designed Level 1** 📜
-    -   A complete map with platforms, obstacles, and immersive visuals.
--   **Playable Knight Character** 🛡️⚔️
-    -   Smooth movement across the map.
-    -   Running, jumping, and basic attack mechanics.
--   **Enemy System** 👹
-    -   Basic enemy placed in Level 1 (AI development in progress).
+### ⚔️ Playable Knight Character
+- Smooth movement across the map.
+- Running, jumping, and **three-hit sword combo** attack.
 
-🚀 Future Plans
----------------
+### 👹 Enhanced Enemy System
+- **Proper Enemy AI**: Enemies now react and attack intelligently, making encounters more dynamic.
+- Improved enemy interactions.
 
-Aurora Knight is still in development, and several exciting features are planned:
+### 🚀 Traversal Abilities (Currently in Debug Mode)
+- **Leaf Glide 🍂** – Slowly descend from jumps, adding a unique flow to movement.
+- **Cloud Step ☁️** – Spawns a temporary cloud under the player's feet for a short time, enabling access to unreachable areas.
+- **Bubble Shield 🌀** – A temporary protective barrier to block enemy attacks.
 
-### **🌍 Expanding the World**
+### 🎮 Interactive Elements
+- **Health Collectibles** (More collectibles will be added soon).
+- **Particle Effects for Each Level:**
+  - Falling leaves in the Forest 🍃
+  - Snowflakes in Ice Age ❄️
+  - Dust particles in the Desert 🏜️
 
--   **Three Unique Levels:**
-    1.  **Forest** -- Lush greenery and falling leaves 🍃
-    2.  **Ice Age** -- Snowy landscapes with gentle snowfall ❄️
-    3.  **Desert** -- Windy dunes with drifting sand particles 🏜️
+## 🔮 Future Plans
+### 🌍 Expanding the World
+- **Three Unique Levels:**
+  - **Forest** – Lush greenery and falling leaves 🍃
+  - **Ice Age** – Snowy landscapes with gentle snowfall ❄️
+  - **Desert** – Windy dunes with drifting sand particles 🏜️
 
-### **🛡️ New Abilities & Mechanics**
+### 🛡️ Power-ups & Collectibles
+- Leaf Glide, Cloud Step, and Bubble Shield will be collectible abilities instead of debug features.
+- New **power-ups and stamina system**.
 
--   **Leaf Glide** 🍂 -- Collecting a special leaf allows the knight to glide gracefully after jumping.
--   **Cloud Step** ☁️ -- Spawns a cloud under the player's feet for a short time, enabling access to unreachable areas.
--   **Bubble Shield** 🌀 -- A temporary protective barrier to block enemy attacks.
+### 🎭 Enhanced Gameplay
+- **More enemy variety** with unique behaviors.
+- **Polished animations & sound effects** to enhance the game's atmosphere.
+- **More dynamic interactions**, including environmental triggers and hidden elements.
 
-### **🎮 Immersive Details**
+## 🔧 Development Progress
+💡 Got ideas or feedback? Feel free to open an issue or discuss in the repository!
 
--   **Particle Effects** for each level:
-    -   Falling leaves in the **Forest** 🍃
-    -   Snowflakes in **Ice Age** ❄️
-    -   Dust particles in the **Desert** 🏜️
--   **Advanced Enemy AI** to provide challenging and engaging encounters.
--   **Polished Animations & Sound Effects** to enhance the game's atmosphere.
-
-* * * * *
-
-🔧 Development Progress
------------------------
-
-
-💡 **Got ideas or feedback?** Feel free to open an issue or discuss in the repository!
-
-* * * * *
-
-### 📌 Stay Updated
-
+## 📌 Stay Updated
 More updates coming soon! 🎮✨
