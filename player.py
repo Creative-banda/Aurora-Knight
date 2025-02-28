@@ -202,7 +202,6 @@ class Player(pygame.sprite.Sprite):
                 self.vel_y = self.speed
             elif keys[pygame.K_w]:
                 self.vel_y = -self.speed
-            print("Down ")
             dx = self.speed * 2 * self.direction
         
 
