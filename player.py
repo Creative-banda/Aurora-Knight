@@ -52,7 +52,7 @@ class Player(pygame.sprite.Sprite):
         self.max_power = 100
         self.power = self.max_power
         self.HaveCloud = False
-        self.HaveShield = True
+        self.HaveShield = False
         
         
     def load_animations(self):
