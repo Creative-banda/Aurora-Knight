@@ -293,6 +293,14 @@ class Glider(pygame.sprite.Sprite):
         self.timeout = 5000
         self.created_time = pygame.time.get_ticks()
         self.direction = 1
+        self.isSmokeEnded = False
+        
+        # Load smoke animation
+        self.smoke_animation_list = []
+        for i in range(0, 9):
+            img = pygame.image.load(f"{IMAGES_DIR}/effects/cloud/0{i}_cloud.png")
+            img = pygame.transform.scale(img, (120, 120))
+            self.smoke_animation_list.append(img)
     
     def load_animation(self):
         for i in range(0, 9):
@@ -310,6 +318,7 @@ class Glider(pygame.sprite.Sprite):
             self.last_update = pygame.time.get_ticks()
         if self.frame_index >= len(self.animation_list):
             self.frame_index = 0
+            self.isSmokeEnded = True
         
         
         if pygame.time.get_ticks() - self.created_time > self.timeout:
@@ -326,6 +335,8 @@ class Glider(pygame.sprite.Sprite):
 
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+        if not self.isSmokeEnded:
+            screen.blit(self.smoke_animation_list[self.frame_index], (self.rect.x, self.rect.y - 70))
 
 
 class Button():
@@ -592,6 +603,8 @@ while running:
                         player.onGlider = True
                         glider.direction = player.direction
                         glider.created_time = pygame.time.get_ticks()
+                        glider.frame_index = 0
+                        glider.isSmokeEnded = False
                         player.update_animation(0)
     
     player_x = player.rect.x 
@@ -638,16 +651,14 @@ while running:
         shield.update(player)
         shield.draw()
         
-    if player.onGlider:
-        glider.update()
-        glider.draw()
-
     boundary_group.update()
-
-
     
     player.update()
     player.draw()
+    
+    if player.onGlider:
+        glider.update()
+        glider.draw()
     # print(player.rect.x, player.rect.y)
     draw_health_bar(screen, player.health)
     

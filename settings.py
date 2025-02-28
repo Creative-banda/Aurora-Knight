@@ -31,6 +31,7 @@ ocean_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 cloud_group = pygame.sprite.Group()
 collectable_item_group = pygame.sprite.Group()
+smoke_group = pygame.sprite.Group()
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
 pygame.display.set_caption("Aurora-Knight")
