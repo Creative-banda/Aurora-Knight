@@ -25,6 +25,7 @@ MAP_WIDTH = 100 * CELL_SIZE # This is the width of the map 100 cells in a row * 
 
 # Fonts
 notification_font = pygame.font.Font("assets/fonts/notification.otf", 26)
+big_font = pygame.font.Font("assets/fonts/notification.otf", 60)
 
 
 # Sprite groups
@@ -36,6 +37,7 @@ enemy_group = pygame.sprite.Group()
 cloud_group = pygame.sprite.Group()
 collectable_item_group = pygame.sprite.Group()
 smoke_group = pygame.sprite.Group()
+particle_group = pygame.sprite.Group()
 
 screen = pygame.display.set_mode(SCREEN_SIZE)
 pygame.display.set_caption("Aurora-Knight")
@@ -88,3 +90,11 @@ size = {
     "water": (CELL_SIZE, CELL_SIZE)
 
 }
+
+# Load leaf images (0.png to 4.png)
+leaf_images = []
+
+for i in range(5):
+    image = pygame.image.load(f"assets\images\effects\leaf_particle\{i}.png").convert_alpha()
+    image = pygame.transform.scale(image, (10, 10))  # Resize if needed
+    leaf_images.append(image)

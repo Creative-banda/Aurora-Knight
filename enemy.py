@@ -22,7 +22,7 @@ class Enemy(pygame.sprite.Sprite):
             self.end_frame = 9
         else:
             self.size = (CELL_SIZE * 1.5, CELL_SIZE)
-            self.attack_frame = 0
+            self.attack_frame = 1
             self.end_frame = 5
         self.load_animations() 
         self.image = self.animation_list[self.current_action][self.frame_index]
@@ -73,8 +73,6 @@ class Enemy(pygame.sprite.Sprite):
         
         if self.current_action == 2 and self.frame_index >= len(self.animation_list[self.current_action]):
             self.current_action = 0
-            self.frame_index = 0
-            self.attacking = False
         
         if self.current_action == 3 and self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = len(self.animation_list[self.current_action]) - 1
@@ -172,9 +170,9 @@ class Enemy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # draw vision rectangle
-        # pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
+        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
 
-        # pygame.draw.rect(screen, BLACK, self.rect, 1)
+        pygame.draw.rect(screen, BLACK, self.rect, 1)
     
     def take_damage(self, damage):
         if not self.alive:
@@ -197,8 +195,11 @@ class Enemy(pygame.sprite.Sprite):
 
 
     def do_attack(self, player):
-        if self.rect.colliderect(player.rect) and self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
-            player.take_damage(10)
+        if self.rect.colliderect(player.rect) :
+            print(self.frame_index)
+            if self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
+                print(self.frame_index)
+                player.take_damage(10)
 
 
     def move_to_player(self, player):
@@ -221,8 +222,8 @@ class Enemy(pygame.sprite.Sprite):
             self.direction = 1 if player.rect.x > self.rect.x else -1
 
             # Increase speed & animation cooldown for running effect
-            self.speed = 1.5  
-            self.animation_cooldown = 50
+            self.speed = 2.5
+            self.animation_cooldown = 30
             self.current_action = 1  # Run animation
 
             # Check if enemy is close enough to attack

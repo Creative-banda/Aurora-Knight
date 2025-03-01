@@ -10,7 +10,7 @@ A 2D platformer game built with Pygame.
 # ──────────────────────────────────
 
 import pygame
-import sys, json, os
+import sys, json, os, random, math
 from settings import *
 from player import Player
 from enemy import Enemy
@@ -179,6 +179,7 @@ class Collectable_Item(pygame.sprite.Sprite):
             elif self.item_type == "shield":
                 player.HaveShield = True
                 shield.created_time = pygame.time.get_ticks()
+                notification.show("You got a Shield for 5 seconds", 3000)
                 self.kill()
             
             elif self.item_type == "slider_power":
@@ -187,6 +188,72 @@ class Collectable_Item(pygame.sprite.Sprite):
         
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+
+
+class Exit(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/27.png")
+        self.image = pygame.transform.scale(self.image, size["board"])
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = x
+        self.rect.y = y
+    
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+    
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
+
+
+class LeafParticle(pygame.sprite.Sprite):
+    def __init__(self, x, y, images):
+        super().__init__()  # Initialize the sprite
+        self.x = x  
+        self.y = y  
+        self.images = images  
+        self.image = random.choice(self.images)  
+
+        self.rect = self.image.get_rect(center=(x, y))
+
+        self.fall_speed = random.uniform(1, 2)  
+        self.sway_amount = random.uniform(5, 10)  
+        self.sway_speed = random.uniform(0.01, 0.03)  
+
+        self.angle = random.uniform(0, 360)
+        self.rotation_speed = random.uniform(-2, 2)
+
+    def update(self):
+        self.y += self.fall_speed
+        sway_offset = math.sin(self.y * self.sway_speed) * self.sway_amount
+        self.x += sway_offset
+
+        self.angle += self.rotation_speed
+        self.angle %= 360  
+
+        # Adjust position relative to player movement
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+
+        if self.rect.y > 600:  # Remove if off-screen
+            self.kill()
+
+    def draw(self, screen):
+        rotated_image = pygame.transform.rotate(self.image, self.angle)
+        new_rect = rotated_image.get_rect(center=self.rect.center)
+        screen.blit(rotated_image, new_rect.topleft)
+
+
+def generate_particles():
+    print(player.rect.x + bg_scroll_x)
+    if len(particle_group) < 10:
+        x = random.randint(bg_scroll_x, player.rect.x + bg_scroll_x)
+        y = random.randint(0, 10)
+        particle = LeafParticle(x, y, leaf_images)
+        particle_group.add(particle)
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -451,8 +518,6 @@ class Notification:
 # SUPPORTIVE FUNCTIONS
 # ──────────────────────────────────
 
-import pygame
-
 def draw_bar(screen, health, position, image, bar_color=(255, 0, 0)):
 
 
@@ -470,13 +535,12 @@ def draw_bar(screen, health, position, image, bar_color=(255, 0, 0)):
 
 
         
-
 def create_map():
     
     global player, bg_scroll_x, bg_scroll_y
     
     """Creates the game map."""
-    with open(f"{LEVELS_DIR}/level1.json") as file:
+    with open(f"{LEVELS_DIR}/level{current_level}.json") as file:
         maze_layout = json.load(file)
     
 
@@ -505,7 +569,10 @@ def create_map():
                 elif cell == 25 or cell == 26:
                     decoration = Decoration(world_x, world_y, cell, "mushroom")
                     decoration_group.add(decoration)
-                elif cell == 27 or cell == 28:
+                elif cell == 27:
+                    exit.x = world_x
+                    exit.y = world_y + CELL_SIZE // 2
+                elif cell == 28:
                     decoration = Decoration(world_x, world_y, cell, "board")
                     decoration_group.add(decoration)
                 elif cell == 29:
@@ -542,10 +609,13 @@ def create_map():
 
 
 def GameIntro():
+    text = big_font.render(f"Level {current_level}", True, (0, 255, 0))
+    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() - 80))
     while True:
         screen.fill((0, 0, 0))
         screen.blit(intro_bg, (0, 0))
         screen.blit(game_name, (80, 80))
+        screen.blit(text, text_rect)
         isClicked = button.update()
         button.draw(screen)
         for event in pygame.event.get():
@@ -611,6 +681,8 @@ def reset_game():
     collectable_item_group.empty()
     
 
+
+
 # ──────────────────────────────────
 # GAME VARIABLES & OBJECTS
 # ──────────────────────────────────
@@ -625,6 +697,7 @@ bg_scroll_y = 0
 
 # Initialize dedicated background parallax variables
 bg_parallax_x = 0
+current_level = 1
 
 # Create button instance
 button = Button(340, 300, 130, 130, button_image)
@@ -633,12 +706,12 @@ button = Button(340, 300, 130, 130, button_image)
 bg_music.play(-1)
 GameIntro()
 
+exit = Exit(0, 0)
 create_map()
 notification = Notification(board_img, "Notification Text", notification_font)
 
 shield = Shield(player.x, player.y)
 glider = Glider()
-
 
 # ──────────────────────────────────
 # 🎮 MAIN GAME LOOP
@@ -694,6 +767,8 @@ while running:
                     if player.onGlider:
                         glider.removeGlider()
     
+    generate_particles()
+    
     player_x = player.rect.x 
     
     for tile in tile_group:
@@ -708,14 +783,13 @@ while running:
             decoration.update()
             decoration.draw()
         
-    enemy_group.update()
     for enemy in enemy_group:
         diff_x = abs(enemy.x - bg_scroll_x - player_x)
         if diff_x < 800:
             enemy.move( tile_group, bg_scroll_x, bg_scroll_y)
             enemy.ai(player)
-
-    enemy_group.draw(screen)
+            enemy.update()
+            enemy.draw()
 
 
     collectable_item_group.update()
@@ -733,6 +807,9 @@ while running:
     
     cloud_group.update()
     cloud_group.draw(screen)
+    
+    exit.update()
+    exit.draw()
     
     if player.HaveShield:
         shield.update(player)
@@ -755,10 +832,19 @@ while running:
     # Update and draw notification
     notification.update()
     notification.draw(screen)
-            
+    
+    # Update and draw leaf particles
+    
+    particle_group.update()
+    particle_group.draw(screen)
+         
     # print(player.rect.x, player.rect.y)
     draw_bar(screen, player.health, (10, 10), health_bar, (255, 0, 0))
     draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
+    
+    if player.rect.colliderect(exit.rect):
+        print("Level Completed")
+        running = False
 
     
     # Display FPS in Top Middle

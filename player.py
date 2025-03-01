@@ -51,10 +51,29 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
-        self.HaveCloud = False
+        self.HaveCloud = True
         self.HaveShield = False
-        self.HaveGlider = False
+        self.HaveGlider = True
         self.onGlider = False
+        self.slash_animation = ["water","fire"]
+        self.slash_list = []
+        self.isSlashing = False
+        self.load_slash()
+        self.slash_index = 0    
+        self.slash_image = self.slash_list[1][self.slash_index]
+    
+    def load_slash(self):
+        for slash in self.slash_animation:
+            temp_list = []
+            slash_path = f"{IMAGES_DIR}/effects/{slash}_slash"
+            num_of_frames = len(os.listdir(slash_path))
+            for i in range(1, num_of_frames + 1):
+                img_path = f"{slash_path}/{i}.png"
+                img = pygame.image.load(img_path).convert_alpha()
+                img = pygame.transform.rotate(img, 40)
+                img = pygame.transform.scale(img, (60, 150))
+                temp_list.append(img)
+            self.slash_list.append(temp_list)
         
         
     def load_animations(self):
@@ -91,6 +110,10 @@ class Player(pygame.sprite.Sprite):
         if pygame.time.get_ticks() - self.update_time > self.animation_cooldown: 
             self.update_time = pygame.time.get_ticks()
             self.frame_index += 1
+            self.slash_index += 1
+            if self.slash_index >= len(self.slash_list[0]):
+                self.isSlashing = False
+                self.slash_index = 0
         
         if (self.current_action == 4 or self.current_action == 6) and self.frame_index >= len(self.animation_list[self.current_action]):
             self.frame_index = 0
@@ -121,6 +144,8 @@ class Player(pygame.sprite.Sprite):
 
         self.image = self.animation_list[self.current_action][self.frame_index]
         self.image = pygame.transform.flip(self.image, self.direction == -1, False)
+        self.slash_image = self.slash_list[1][self.slash_index]
+        self.slash_image = pygame.transform.flip(self.slash_image, self.direction == -1, False)
 
 
     def update_animation(self, new_action):
@@ -129,6 +154,8 @@ class Player(pygame.sprite.Sprite):
             self.current_action = new_action
             self.frame_index = 0
             self.update_time = pygame.time.get_ticks()
+            if self.current_action == 4:
+                self.slash_index = 0
 
 
     def take_damage(self, amount):
@@ -195,6 +222,8 @@ class Player(pygame.sprite.Sprite):
             self.isAttacking = True 
             self.attack_rect = self.attack()
         
+        if self.current_action == 4 and self.frame_index == 4 :
+            self.isSlashing = True
 
         # Idle animation when no movement
         if not (keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w]) and not self.InAir and not self.isAttacking:
@@ -310,7 +339,6 @@ class Player(pygame.sprite.Sprite):
                     if self.frame_index > 3 and self.frame_index < 11:
                         enemy.take_damage(30)
                         self.last_attack_time = pygame.time.get_ticks()
-                        break
         return screen_dx, screen_dy
 
     
@@ -324,6 +352,9 @@ class Player(pygame.sprite.Sprite):
             
     def draw(self):
         """ Draw the player only if visible """
+
+        if self.isSlashing:
+            screen.blit(self.slash_image, (self.attack_rect.x , self.attack_rect.y - 80))
         if self.isVisible:
             screen.blit(self.image, self.rect)
         # pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)

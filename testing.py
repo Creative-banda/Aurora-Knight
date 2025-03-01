@@ -1,100 +1,140 @@
 import pygame
+import random
+import math
 
-# Initialize pygame
-pygame.init()
+class LeafParticle:
+    def __init__(self, x, y, images):
+        """
+        Initialize a leaf particle with movement effects.
 
-# Window settings
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Notification Demo")
+        Parameters:
+        - x, y: Initial position of the leaf
+        - images: List of leaf images
+        """
+        self.x = x  # Initial position (remains unchanged)
+        self.y = y  
+        self.images = images  
+        self.image = random.choice(self.images)  # Pick a random leaf
 
-# Load board image (replace with your image)
-board_img = pygame.image.load("bg.png").convert_alpha()
-board_img = pygame.transform.scale(board_img, (400, 100))  # Resize if needed
+        # Create a rect to store the blit position
+        self.rect = self.image.get_rect(center=(x, y))
 
-# Font setup
-font = pygame.font.Font(None, 28)  # Default pygame font
+        # Motion properties
+        self.fall_speed = random.uniform(1, 3)  # Random fall speed
+        self.sway_amount = random.uniform(5, 15)  # Swaying effect
+        self.sway_speed = random.uniform(0.02, 0.05)  # Swaying speed
 
-class Notification:
-    def __init__(self, board_image, text, font, duration=2000):
-        """Initialize the notification system."""
-        self.image = board_image
-        self.text = text
-        self.font = font
-        self.duration = duration  # How long it stays on screen (milliseconds)
-        self.start_time = None  # Track when it starts
+        # Rotation properties
+        self.angle = random.uniform(0, 360)
+        self.rotation_speed = random.uniform(-2, 2)
 
-        # Position (starts above screen)
-        self.x = (SCREEN_WIDTH - self.image.get_width()) // 2
-        self.y = -self.image.get_height()  # Starts off-screen
-        self.target_y = 50  # Where it stops
-        self.speed = 10  # Slide speed
+    def update(self, bg_scroll_x, bg_scroll_y):
+        """
+        Update leaf movement, considering falling, swaying, and background scrolling.
+        """
+        # Falling effect
+        self.y += self.fall_speed
 
-        self.active = False  # Initially hidden
-        self.fading_out = False  # Track if it's disappearing
+        # Swaying effect
+        sway_offset = math.sin(self.y * self.sway_speed) * self.sway_amount
+        self.x += sway_offset
 
-    def show(self):
-        """Activate the notification."""
-        self.start_time = pygame.time.get_ticks()
-        self.active = True
-        self.fading_out = False  # Reset fade-out state
-        self.y = -self.image.get_height()  # Reset position
+        # Rotation effect
+        self.angle += self.rotation_speed
+        self.angle %= 360  # Keep rotation within 0-360 degrees
 
-    def update(self):
-        """Move notification down and up based on timing."""
-        if not self.active:
-            return
+        # Adjust for background movement (player movement in the world)
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
 
-        current_time = pygame.time.get_ticks()
-
-        # Slide down smoothly
-        if self.y < self.target_y and not self.fading_out:
-            self.y += self.speed
-
-        # Wait for the duration, then start fading out
-        elif current_time - self.start_time > self.duration:
-            self.fading_out = True  # Start disappearing
-
-        # Slide back up smoothly
-        if self.fading_out:
-            self.y -= self.speed
-            if self.y < -self.image.get_height():  # Fully disappeared
-                self.active = False  # Hide completely
+        # Remove if off-screen
+        return self.rect.y < 600  # Adjust based on screen size
 
     def draw(self, screen):
-        """Render the notification if active."""
-        if self.active:
-            screen.blit(self.image, (self.x, self.y))
-            
-            # Render text on board
-            text_surface = self.font.render(self.text, True, (255, 255, 255))
-            text_x = self.x + (self.image.get_width() - text_surface.get_width()) // 2
-            text_y = self.y + (self.image.get_height() - text_surface.get_height()) // 2
-            screen.blit(text_surface, (text_x, text_y))
+        """
+        Draw the leaf with rotation.
+        """
+        rotated_image = pygame.transform.rotate(self.image, self.angle)
+        new_rect = rotated_image.get_rect(center=self.rect.center)
+        screen.blit(rotated_image, new_rect.topleft)
 
-# Create notification instance
-notification = Notification(board_img, "You got a new power! Press 1 to spawn a cloud", font)
 
-# Main loop
-running = True
+class LeafParticleSystem:
+    def __init__(self, num_particles, images, screen_width, screen_height):
+        """
+        Initialize the leaf particle system.
+
+        Parameters:
+        - num_particles: Number of initial particles
+        - images: List of leaf images
+        - screen_width, screen_height: Screen size
+        """
+        self.particles = []
+        self.images = images
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+
+        # Generate initial particles
+        for _ in range(num_particles):
+            x = random.randint(0, screen_width)
+            y = random.randint(-100, screen_height - 100)
+            self.particles.append(LeafParticle(x, y, self.images))
+
+    def update(self, bg_scroll_x, bg_scroll_y):
+        """
+        Update all leaf particles and remove the ones that fall off-screen.
+        """
+        self.particles = [p for p in self.particles if p.update(bg_scroll_x, bg_scroll_y)]
+
+        # Maintain particle count
+        while len(self.particles) < 10:
+            x = random.randint(0, self.screen_width)
+            y = random.randint(-100, -20)  # Spawn from above
+            self.particles.append(LeafParticle(x, y, self.images))
+
+    def draw(self, screen):
+        """
+        Draw all leaf particles.
+        """
+        for p in self.particles:
+            p.draw(screen)
+
+
+# Example Usage in Game Loop:
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+
+# Load leaf images (0.png to 4.png)
+leaf_images = []
+for i in range(5):
+    image = pygame.image.load(f"assets/images/effects/leaf_particle/{i}.png").convert_alpha()
+    image = pygame.transform.scale(image, (10, 10))  # Resize if needed
+    leaf_images.append(image)
+
+# Create leaf particle system
+leaf_system = LeafParticleSystem(10, leaf_images, 800, 600)
+
 clock = pygame.time.Clock()
+bg_scroll_x = 0
+bg_scroll_y = 0
 
+running = True
 while running:
-    screen.fill((30, 30, 30))  # Background color
+    screen.fill((0, 0, 0))  # Clear screen
 
+    # Simulate background scrolling (replace with real player movement)
+    bg_scroll_x += 0.5  # Example movement
+    bg_scroll_y += 0.2
+
+    leaf_system.update(bg_scroll_x, bg_scroll_y)
+    leaf_system.draw(screen)
+
+    pygame.display.flip()
+    clock.tick(60)
+
+    # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-        # Show notification when space is pressed
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            notification.show()
-
-    # Update and draw notification
-    notification.update()
-    notification.draw(screen)
-
-    pygame.display.flip()
-    clock.tick(60)  # 60 FPS
 
 pygame.quit()
