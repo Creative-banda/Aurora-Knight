@@ -180,15 +180,20 @@ class Enemy(pygame.sprite.Sprite):
                 self.update_animation(3)
             return
         self.health -= damage
-        if self.health <= 0:
+        if self.health <= 0:      
+            sound = random.choice(["enemy_die_1.mp3","enemy_die_2.wav"])
+            pygame.mixer.Sound(f"{SOUND_DIR}/{sound}").play()
             if self.type == "mushroom":
                 self.update_animation(5)
+
+                # play death sound
             else:
                 self.update_animation(3)
             self.alive = False
             self.isHurt = False
             self.stun_time = pygame.time.get_ticks()
         else:
+            pygame.mixer.Sound(f"{SOUND_DIR}/enemy_damage.mp3").play()
             self.update_animation(4)
             self.isHurt = True
             self.idling = False

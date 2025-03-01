@@ -1,5 +1,5 @@
 import pygame,os
-from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X
+from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, attack_sound
 
 
 SCREEN_THRUST_X = 400
@@ -219,6 +219,9 @@ class Player(pygame.sprite.Sprite):
                 self.last_attack = pygame.time.get_ticks()
             else:
                 new_action = 4
+            
+            if not self.isAttacking:
+                attack_sound.play()
             self.isAttacking = True 
             self.attack_rect = self.attack()
         

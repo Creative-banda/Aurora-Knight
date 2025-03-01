@@ -169,21 +169,25 @@ class Collectable_Item(pygame.sprite.Sprite):
             if self.item_type == "heart" and player.health < 100:           
                 player.health = min(100, player.health + 20)
                 notification.show("Health increased by 20")
+                bonus_sound.play()
                 self.kill()
             
             elif self.item_type == "cloud_power":
                 player.HaveCloud = True
                 notification.show("You got a new power! Press E to spawn a cloud", 4000)
+                bonus_sound.play()
                 self.kill()
                 
             elif self.item_type == "shield":
                 player.HaveShield = True
                 shield.created_time = pygame.time.get_ticks()
                 notification.show("You got a Shield for 5 seconds", 3000)
+                bonus_sound.play()
                 self.kill()
             
             elif self.item_type == "slider_power":
                 player.HaveSlider = True
+                bonus_sound.play()
                 self.kill()
         
     def draw(self):

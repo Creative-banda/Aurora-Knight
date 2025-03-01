@@ -73,8 +73,11 @@ board_img = pygame.transform.scale(board_img, (400, 100))  # Resize if needed
 
 # Sound Effects
 
-bg_music = pygame.mixer.Sound(f"{SOUND_DIR}/bg_music.mp3")
+bg_music = pygame.mixer.Sound(f"{SOUND_DIR}/background_music.mp3")
+bg_music.set_volume(0.3)
 
+attack_sound = pygame.mixer.Sound(f"{SOUND_DIR}/sword_attack.mp3")
+bonus_sound = pygame.mixer.Sound(f"{SOUND_DIR}/bonus.mp3")
 
 # LOCAL VARIABLES
 
