@@ -51,9 +51,9 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
-        self.HaveCloud = True
+        self.HaveCloud = False
         self.HaveShield = False
-        self.HaveGlider = True
+        self.HaveGlider = False
         self.onGlider = False
         
         
@@ -143,7 +143,7 @@ class Player(pygame.sprite.Sprite):
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
             self.last_blink_time = self.last_hurt_time  # Start blinking
             self.isAttacking = False
-            print("Player is hurt")
+            self.InAir = False
         self.vel_y = -5
 
 
@@ -207,6 +207,10 @@ class Player(pygame.sprite.Sprite):
             elif keys[pygame.K_w]:
                 self.vel_y = -self.speed
             dx = self.speed * 2 * self.direction
+            self.power -= 0.8
+        else:
+            if self.power < self.max_power:
+                self.power += 0.03
         
 
         # Update animation if changed

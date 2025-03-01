@@ -23,6 +23,10 @@ SCREEN_THRUST_X = 400
 MAP_WIDTH = 100 * CELL_SIZE # This is the width of the map 100 cells in a row * CELLSIZE
 
 
+# Fonts
+notification_font = pygame.font.Font("assets/fonts/notification.otf", 26)
+
+
 # Sprite groups
 tile_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
@@ -59,6 +63,12 @@ bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg").convert_alpha()
 intro_bg = pygame.transform.scale(intro_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
+health_bar = pygame.image.load(f"{IMAGES_DIR}/player/health_bar/health.png").convert_alpha()
+spell_bar = pygame.image.load(f"{IMAGES_DIR}/player/spell_bar/spell_bar_empty.png").convert_alpha()
+
+board_img = pygame.image.load(f"{IMAGES_DIR}/GUI/board.png").convert_alpha()
+board_img = pygame.transform.scale(board_img, (400, 100))  # Resize if needed
+
 # Sound Effects
 
 bg_music = pygame.mixer.Sound(f"{SOUND_DIR}/bg_music.mp3")
@@ -78,13 +88,3 @@ size = {
     "water": (CELL_SIZE, CELL_SIZE)
 
 }
-
-# Load health bar images
-health_bars = [
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/5_health_bar.png"), (140,50)),  # 0 HP
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/4_health_bar.png"), (140,50)),  # 2-24 HP
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/3_health_bar.png"), (140,50)),  # 25-49 HP
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/2_health_bar.png"), (140,50)),  # 50-74 HP
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/1_health_bar.png"), (140,50)),  # 75-99 HP
-    pygame.transform.scale(pygame.image.load(f"{IMAGES_DIR}/player/health_bar/0_health_bar.png"), (140,50)),  # 100 HP
-]

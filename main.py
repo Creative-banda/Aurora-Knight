@@ -23,7 +23,7 @@ from enemy import Enemy
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
         super().__init__()
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{cell}.png").convert_alpha()
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{cell}.png")
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
         self.rect = self.image.get_rect()
         self.x = x
@@ -82,7 +82,7 @@ class Ocean(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         
         for i in range(0, 8):
-            image = pygame.image.load(f"{IMAGES_DIR}/maps/Ocean/{i}.png").convert_alpha()
+            image = pygame.image.load(f"{IMAGES_DIR}/maps/Ocean/{i}.png")
             image = pygame.transform.scale(image, (CELL_SIZE, CELL_SIZE))
             self.animation_list.append(image)
 
@@ -141,7 +141,7 @@ class Collectable_Item(pygame.sprite.Sprite):
         path = f"{IMAGES_DIR}/collect_items/{self.item_type}"
         num_of_frames = len(os.listdir(path))
         for i in range(0, num_of_frames):
-            img = pygame.image.load(f"{path}/{self.item_type}-{i}.png").convert_alpha()
+            img = pygame.image.load(f"{path}/{self.item_type}-{i}.png")
             img = pygame.transform.scale(img, (50, 50))
             self.animation_list.append(img)
         self.image = self.animation_list[self.frame_index]
@@ -168,10 +168,12 @@ class Collectable_Item(pygame.sprite.Sprite):
             
             if self.item_type == "heart" and player.health < 100:           
                 player.health = min(100, player.health + 20)
+                notification.show("Health increased by 20")
                 self.kill()
             
             elif self.item_type == "cloud_power":
                 player.HaveCloud = True
+                notification.show("You got a new power! Press E to spawn a cloud", 4000)
                 self.kill()
                 
             elif self.item_type == "shield":
@@ -213,7 +215,7 @@ class Cloud(pygame.sprite.Sprite):
             action_path = f"{IMAGES_DIR}/cloud/{action}"
             num_of_frames = len(os.listdir(action_path))
             for i in range(0, num_of_frames):
-                img = pygame.image.load(f"{IMAGES_DIR}/cloud/{action}/{i}.png").convert_alpha()
+                img = pygame.image.load(f"{IMAGES_DIR}/cloud/{action}/{i}.png")
                 temp_list.append(img)
             self.animation_list.append(temp_list)
     
@@ -248,7 +250,7 @@ class Shield(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         self.frame_index = 0
         for i in range(0, 24):
-            image = pygame.image.load(f"{IMAGES_DIR}/effects/shield/{i}_shield.png").convert_alpha()
+            image = pygame.image.load(f"{IMAGES_DIR}/effects/shield/{i}_shield.png")
             image = pygame.transform.scale(image, (100, 100))
             self.animation_list.append(image)
 
@@ -290,18 +292,9 @@ class Glider(pygame.sprite.Sprite):
         self.frame_index = 0
         self.last_update = pygame.time.get_ticks()
         self.load_animation()
-        self.timeout = 5000
-        self.created_time = pygame.time.get_ticks()
+        self.timeout = 1800
         self.direction = 1
-        self.isSmokeEnded = False
         
-        # Load smoke animation
-        self.smoke_animation_list = []
-        for i in range(0, 9):
-            img = pygame.image.load(f"{IMAGES_DIR}/effects/cloud/0{i}_cloud.png")
-            img = pygame.transform.scale(img, (120, 120))
-            self.smoke_animation_list.append(img)
-    
     def load_animation(self):
         for i in range(0, 9):
             img = pygame.image.load(f"{IMAGES_DIR}/effects/leaf/0{i}_leaf.png")
@@ -320,10 +313,6 @@ class Glider(pygame.sprite.Sprite):
             self.frame_index = 0
             self.isSmokeEnded = True
         
-        
-        if pygame.time.get_ticks() - self.created_time > self.timeout:
-            self.removeGlider()
-        
         self.image = self.animation_list[self.frame_index]
         self.image = pygame.transform.flip(self.image, self.direction == -1, False)
         
@@ -331,12 +320,45 @@ class Glider(pygame.sprite.Sprite):
     def removeGlider(self):
         player.onGlider = False
         player.update_animation(3)
+        smoke_group.add(Smoke(player.rect.x + bg_scroll_x, player.rect.y + bg_scroll_y))
         
 
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
-        if not self.isSmokeEnded:
-            screen.blit(self.smoke_animation_list[self.frame_index], (self.rect.x, self.rect.y - 70))
+
+
+class Smoke(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.animation_list = []
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+        self.load_animation()
+        self.image = self.animation_list[self.frame_index]
+        self.rect = self.image.get_rect()
+        self.x = x - 50
+        self.y = y - 50
+        self.rect.x = self.x
+        self.rect.y = self.y
+    
+    def load_animation(self):
+        for i in range(0, 9):
+            img = pygame.image.load(f"{IMAGES_DIR}/effects/cloud/0{i}_cloud.png")
+            img = pygame.transform.scale(img, (120, 120))
+            self.animation_list.append(img)
+    
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+        
+        if pygame.time.get_ticks() - self.last_update > 100:
+            self.frame_index += 1
+            self.last_update = pygame.time.get_ticks()        
+        if self.frame_index >= len(self.animation_list):
+            self.frame_index = 0
+            self.kill()
+        
+        self.image = self.animation_list[self.frame_index]
 
 
 class Button():
@@ -372,25 +394,81 @@ class Button():
         screen.blit(self.image, self.rect.topleft)
 
 
+class Notification:
+    def __init__(self, board_image, text, font, duration=2000):
+        """Initialize the notification system."""
+        self.image = board_image
+        self.text = text
+        self.font = font
+        self.duration = duration 
+        self.start_time = None 
+
+        # Position (starts above screen)
+        self.x = (SCREEN_WIDTH - self.image.get_width()) // 2
+        self.y = -self.image.get_height() 
+        self.target_y = 30  
+        self.speed = 10 
+
+        self.active = False 
+        self.fading_out = False 
+    def show(self, text, duration=2000):
+        """Activate the notification."""
+        self.start_time = pygame.time.get_ticks()
+        self.text = text
+        self.active = True
+        self.duration = duration
+        self.fading_out = False  
+        self.y = -self.image.get_height()  
+
+    def update(self):
+        if not self.active:
+            return
+
+        current_time = pygame.time.get_ticks()
+
+        if self.y < self.target_y and not self.fading_out:
+            self.y += self.speed
+
+        elif current_time - self.start_time > self.duration:
+            self.fading_out = True  
+
+        if self.fading_out:
+            self.y -= self.speed
+            if self.y < -self.image.get_height():  
+                self.active = False
+
+    def draw(self, screen):
+        if self.active:
+            screen.blit(self.image, (self.x, self.y))
+            
+            # Render text on board
+            text_surface = self.font.render(self.text, True, (255, 255, 255))
+            text_x = self.x + (self.image.get_width() - text_surface.get_width()) // 2
+            text_y = self.y + (self.image.get_height() - text_surface.get_height()) // 2
+            screen.blit(text_surface, (text_x, text_y))
+
 # ──────────────────────────────────
 # SUPPORTIVE FUNCTIONS
 # ──────────────────────────────────
 
-def draw_health_bar(screen, health, position=(10, 10)):
-    """Draws the correct health bar based on player's health."""
-    if health == 100:
-        index = 5
-    elif 75 <= health <= 99:
-        index = 4
-    elif 50 <= health <= 74:
-        index = 3
-    elif 25 <= health <= 49:
-        index = 2
-    elif 2 <= health <= 24:
-        index = 1
-    else:  # health == 0
-        index = 0
-    screen.blit(health_bars[index], position)
+import pygame
+
+def draw_bar(screen, health, position, image, bar_color=(255, 0, 0)):
+
+
+    # Define the area where the health bar should be drawn (inside the frame)
+    bar_x = position[0] + 70   # Adjust X to match the inside of the image
+    bar_y = position[1] + 20   # Adjust Y for proper alignment
+    bar_width = int((health / 100) * 140)  # Adjust width to match the transparent part
+    bar_height = 15  # Set the height of the bar
+
+    # Draw the health bar inside the transparent area
+    pygame.draw.rect(screen, bar_color, (bar_x, bar_y, bar_width, bar_height))
+
+    # Draw the health bar frame image on top
+    screen.blit(image, position)
+
+
         
 
 def create_map():
@@ -452,7 +530,9 @@ def create_map():
                 elif cell == 37:
                     collect = Collectable_Item(world_x, world_y, "heart")
                     collectable_item_group.add(collect)
-                
+                elif cell == 38:
+                    collect = Collectable_Item(world_x, world_y, "shield")
+                    collectable_item_group.add(collect)                
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
                     boundary_group.add(boundary)
@@ -527,6 +607,8 @@ def reset_game():
     ocean_group.empty()
     enemy_group.empty()
     cloud_group.empty()
+    smoke_group.empty()
+    collectable_item_group.empty()
     
 
 # ──────────────────────────────────
@@ -552,6 +634,7 @@ bg_music.play(-1)
 GameIntro()
 
 create_map()
+notification = Notification(board_img, "Notification Text", notification_font)
 
 shield = Shield(player.x, player.y)
 glider = Glider()
@@ -593,19 +676,23 @@ while running:
         
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_e and player.InAir and player.HaveCloud:
-                cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
-                cloud_group.add(cloud)
+                if player.power - 50 >= 0:
+                    player.power -= 50
+                    cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
+                    cloud_group.add(cloud)
             if event.key == pygame.K_1 and player.alive and player.HaveGlider:
-                if player.onGlider:
-                    glider.removeGlider()
+                
+                if player.power >= 100 and  player.InAir and not player.onGlider:
+                    
+                    player.onGlider = True
+                    glider.direction = player.direction
+                    
+                    smoke_group.add(Smoke(player.rect.x + bg_scroll_x, player.rect.y + bg_scroll_y))
+                    player.update_animation(0)
+                        
                 else:
-                    if player.InAir:
-                        player.onGlider = True
-                        glider.direction = player.direction
-                        glider.created_time = pygame.time.get_ticks()
-                        glider.frame_index = 0
-                        glider.isSmokeEnded = False
-                        player.update_animation(0)
+                    if player.onGlider:
+                        glider.removeGlider()
     
     player_x = player.rect.x 
     
@@ -656,11 +743,23 @@ while running:
     player.update()
     player.draw()
     
+    smoke_group.update()
+    smoke_group.draw(screen)
+    
     if player.onGlider:
         glider.update()
         glider.draw()
+        if player.power <= 0:
+            glider.removeGlider()
+
+    # Update and draw notification
+    notification.update()
+    notification.draw(screen)
+            
     # print(player.rect.x, player.rect.y)
-    draw_health_bar(screen, player.health)
+    draw_bar(screen, player.health, (10, 10), health_bar, (255, 0, 0))
+    draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
+
     
     # Display FPS in Top Middle
     fps = str(int(clock.get_fps()))
