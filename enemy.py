@@ -24,6 +24,8 @@ class Enemy(pygame.sprite.Sprite):
             self.size = (CELL_SIZE * 1.5, CELL_SIZE)
             self.attack_frame = 1
             self.end_frame = 5
+        
+        self.attack_sound = pygame.mixer.Sound(f"{SOUND_DIR}/{self.type}_hit.mp3")
         self.load_animations() 
         self.image = self.animation_list[self.current_action][self.frame_index]
         self.rect = self.image.get_rect()
@@ -105,6 +107,8 @@ class Enemy(pygame.sprite.Sprite):
                 self.alive = True
                 self.health = 100
                 self.update_animation(0)
+
+                
         
         if pygame.time.get_ticks() - self.last_attack_time > self.attacking_cooldown:
             self.attacking = False
@@ -203,6 +207,7 @@ class Enemy(pygame.sprite.Sprite):
         if self.rect.colliderect(player.rect) :
             print(self.frame_index)
             if self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
+                self.attack_sound.play()
                 print(self.frame_index)
                 player.take_damage(10)
 
