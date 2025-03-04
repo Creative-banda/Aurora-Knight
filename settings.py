@@ -62,7 +62,7 @@ game_name = pygame.transform.scale(game_name, (700, 250))
 bg_img = pygame.image.load(f"{IMAGES_DIR}/maps/forest/BG/BG.png").convert_alpha()
 bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/background.jpg").convert_alpha()
+intro_bg = pygame.image.load(f"{IMAGES_DIR}/GUI/forest_background.jpg").convert_alpha()
 intro_bg = pygame.transform.scale(intro_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 health_bar = pygame.image.load(f"{IMAGES_DIR}/player/health_bar/health.png").convert_alpha()
@@ -90,7 +90,8 @@ size = {
     "board": (CELL_SIZE // 2, CELL_SIZE // 2),
     "cut_tree": (CELL_SIZE , CELL_SIZE // 2),
     "box" : (CELL_SIZE //2 , CELL_SIZE // 2),
-    "water": (CELL_SIZE, CELL_SIZE)
+    "water": (CELL_SIZE, CELL_SIZE),
+    "winter_tree": (CELL_SIZE * 3, CELL_SIZE * 3),
 
 }
 
@@ -98,6 +99,6 @@ size = {
 leaf_images = []
 
 for i in range(5):
-    image = pygame.image.load(f"assets\images\effects\leaf_particle\{i}.png").convert_alpha()
+    image = pygame.image.load(fr"assets\images\effects\leaf_particle\{i}.png")
     image = pygame.transform.scale(image, (10, 10))  # Resize if needed
     leaf_images.append(image)

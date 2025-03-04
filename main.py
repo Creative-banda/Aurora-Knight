@@ -603,7 +603,7 @@ def create_map():
                     collectable_item_group.add(collect)
                 elif cell == 38:
                     collect = Collectable_Item(world_x, world_y, "shield")
-                    collectable_item_group.add(collect)                
+                    collectable_item_group.add(collect)        
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
                     boundary_group.add(boundary)

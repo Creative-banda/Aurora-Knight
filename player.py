@@ -133,7 +133,6 @@ class Player(pygame.sprite.Sprite):
         if self.health <= 0:
             self.isActive = False
             self.update_animation(5) 
-            print("Player is dead")                   
         else:
             self.isHurt = True
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
@@ -212,7 +211,7 @@ class Player(pygame.sprite.Sprite):
             self.power -= 0.8
         else:
             if self.power < self.max_power:
-                self.power += 0.03
+                self.power += 0.1
         
 
         # Update animation if changed

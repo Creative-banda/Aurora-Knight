@@ -107,6 +107,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.alive = True
                 self.health = 100
                 self.update_animation(0)
+            return
 
                 
         
