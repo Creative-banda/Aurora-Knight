@@ -1,5 +1,5 @@
-import pygame,os
-from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, attack_sound
+import pygame,os, random
+from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, attack_sound, hurt_sound, die_sound
 
 
 SCREEN_THRUST_X = 400
@@ -53,7 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.power = self.max_power
         self.HaveCloud = True
         self.HaveShield = False
-        self.HaveSword = False
+        self.HaveSword = True
         self.HaveGlider = True
         self.onGlider = False
         
@@ -132,9 +132,12 @@ class Player(pygame.sprite.Sprite):
         self.health -= amount
         if self.health <= 0:
             self.isActive = False
-            self.update_animation(5) 
+            self.update_animation(5)
+            die_sound.play()
         else:
             self.isHurt = True
+            voice = random.choice(hurt_sound)
+            voice.play()
             self.last_hurt_time = pygame.time.get_ticks()  # Store current time
             self.last_blink_time = self.last_hurt_time  # Start blinking
             self.isAttacking = False

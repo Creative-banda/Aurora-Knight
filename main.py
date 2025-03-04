@@ -23,7 +23,7 @@ from enemy import Enemy
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
         super().__init__()
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{cell}.png")
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/{level_type}/{cell}.png")
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
         self.rect = self.image.get_rect()
         self.x = x
@@ -45,7 +45,7 @@ class Decoration(pygame.sprite.Sprite):
         self.type = type        
         self.x = x
         
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/{img}.png")
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/{level_type}/{img}.png")
         self.image = pygame.transform.scale(self.image, size[self.type])
         self.rect = self.image.get_rect()
         if self.type == "tree":
@@ -64,6 +64,12 @@ class Decoration(pygame.sprite.Sprite):
             self.y = y + CELL_SIZE // 2
         elif self.type == "water":
             self.y = y + CELL_SIZE // 2
+        elif self.type == "winter_tree":
+            self.y = y - CELL_SIZE * 2
+        elif self.type == "snow_man":
+            self.y = y - CELL_SIZE 
+        elif self.type == "iglu":
+            self.y = y - CELL_SIZE 
             
         self.rect.center = (self.x, self.y)
     def update(self):
@@ -174,7 +180,7 @@ class Collectable_Item(pygame.sprite.Sprite):
             
             elif self.item_type == "cloud_power":
                 player.HaveCloud = True
-                notification.show("You got a new power! Press E to spawn a cloud", 4000)
+                notification.show("You got a power! Press E to spawn a cloud", 4000)
                 bonus_sound.play()
                 self.kill()
                 
@@ -187,6 +193,14 @@ class Collectable_Item(pygame.sprite.Sprite):
             
             elif self.item_type == "slider_power":
                 player.HaveSlider = True
+                
+                notification.show("You got a new power! Press Jump 1 to use Slider", 4000)
+                bonus_sound.play()
+                self.kill()
+                
+            elif self.item_type == "sword":
+                player.HaveSword = True
+                notification.show("You got a Fire Sword!", 4000)
                 bonus_sound.play()
                 self.kill()
         
@@ -197,7 +211,7 @@ class Collectable_Item(pygame.sprite.Sprite):
 class Exit(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/forest/27.png")
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/{level_type}/27.png")
         self.image = pygame.transform.scale(self.image, size["board"])
         self.rect = self.image.get_rect()
         self.x = x
@@ -252,7 +266,6 @@ class LeafParticle(pygame.sprite.Sprite):
 
 
 def generate_particles():
-    print(player.rect.x + bg_scroll_x)
     if len(particle_group) < 10:
         x = random.randint(bg_scroll_x, player.rect.x + bg_scroll_x)
         y = random.randint(0, 10)
@@ -306,6 +319,7 @@ class Cloud(pygame.sprite.Sprite):
         
         if self.current_action == 1 and self.index >= len(self.animation_list[self.current_action]) - 1:
             self.kill()
+            cloud_sound.play()
         self.image = self.animation_list[self.current_action][self.index]
     
     def draw(self):
@@ -565,8 +579,15 @@ def create_map():
                 elif cell == 19:
                     player = Player(world_x, world_y)
                 elif cell >= 20 and cell <= 23:
-                    decoration = Decoration(world_x, world_y, cell, "bush")
-                    decoration_group.add(decoration)
+                    if current_level == 2 and cell == 22 :
+                        decoration = Decoration(world_x, world_y, cell, "snow_man")
+                        decoration_group.add(decoration)
+                    elif current_level == 2 and cell == 23:
+                        decoration = Decoration(world_x, world_y, cell, "iglu")
+                        decoration_group.add(decoration)
+                    else:
+                        decoration = Decoration(world_x, world_y, cell, "bush")
+                        decoration_group.add(decoration)
                 elif cell == 24:
                     decoration = Decoration(world_x, world_y, cell, "box")
                     decoration_group.add(decoration)
@@ -583,7 +604,10 @@ def create_map():
                     decoration = Decoration(world_x, world_y, cell, "rock")
                     decoration_group.add(decoration)
                 elif cell == 30:
-                    decoration = Decoration(world_x, world_y, cell, "cut_tree")
+                    if current_level == 1:
+                        decoration = Decoration(world_x, world_y, cell, "cut_tree")
+                    else:
+                        decoration = Decoration(world_x, world_y, cell, "winter_tree")
                     decoration_group.add(decoration)
                 elif cell == 31 or cell == 32:
                     decoration = Decoration(world_x, world_y, cell, "tree")
@@ -598,12 +622,20 @@ def create_map():
                     collect = Collectable_Item(world_x, world_y, "cloud_power")
                     collectable_item_group.add(collect)
                 
-                elif cell == 37:
+                elif cell == 37 or cell == 47:
                     collect = Collectable_Item(world_x, world_y, "heart")
                     collectable_item_group.add(collect)
                 elif cell == 38:
                     collect = Collectable_Item(world_x, world_y, "shield")
-                    collectable_item_group.add(collect)        
+                    collectable_item_group.add(collect) 
+                
+                elif cell == 45:
+                    enemy = Enemy(world_x, world_y, "snow_man")
+                    enemy_group.add(enemy)   
+                elif cell == 49:
+                    collect = Collectable_Item(world_x, world_y, "slider_power")
+                    collectable_item_group.add(collect)
+                   
                 elif cell == 100:
                     boundary = Boundary(world_x, world_y, CELL_SIZE, CELL_SIZE)
                     boundary_group.add(boundary)
@@ -615,6 +647,7 @@ def create_map():
 def GameIntro():
     text = big_font.render(f"Level {current_level}", True, (0, 255, 0))
     text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() - 80))
+    background_music.play(-1)
     while True:
         screen.fill((0, 0, 0))
         screen.blit(intro_bg, (0, 0))
@@ -702,12 +735,15 @@ bg_scroll_y = 0
 # Initialize dedicated background parallax variables
 bg_parallax_x = 0
 current_level = 1
+level_type = "forest"
+leaf_images = forest_particle
+intro_bg = forest_intro_background
+bg_img = forest_bg
+background_music = forest_background_music
+
 
 # Create button instance
 button = Button(340, 300, 130, 130, button_image)
-
-
-bg_music.play(-1)
 GameIntro()
 
 exit = Exit(0, 0)
@@ -757,6 +793,7 @@ while running:
                     player.power -= 50
                     cloud = Cloud(player.rect.x + bg_scroll_x - 30, (player.rect.y + bg_scroll_y) + CELL_SIZE)
                     cloud_group.add(cloud)
+                    cloud_sound.play()
             if event.key == pygame.K_1 and player.alive and player.HaveGlider:
                 
                 if player.power >= 100 and  player.InAir and not player.onGlider:
@@ -847,8 +884,19 @@ while running:
     draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
     
     if player.rect.colliderect(exit.rect):
-        print("Level Completed")
-        running = False
+        # Change the Level and reset all values
+        current_level += 1
+        reset_game()
+        if current_level == 2:
+            level_type = "winter"
+            intro_bg = winter_intro_background
+            leaf_images = winter_particle
+            bg_img = winter_bg
+            background_music.fadeout(1000)
+            background_music = winter_background_music
+            level_complete_sound.play()
+        GameIntro()
+        create_map()
 
     
     # Display FPS in Top Middle

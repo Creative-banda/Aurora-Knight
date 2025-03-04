@@ -20,12 +20,22 @@ class Enemy(pygame.sprite.Sprite):
             self.action_list.append("stun")
             self.attack_frame = 2
             self.end_frame = 9
+            self.attack_damage = 10
+
+        elif self.type == "snow_man":
+            self.size = (CELL_SIZE, CELL_SIZE)
+            self.attack_frame = 1
+            self.end_frame = 5
+            self.attack_damage = 30
         else:
             self.size = (CELL_SIZE * 1.5, CELL_SIZE)
             self.attack_frame = 1
             self.end_frame = 5
-        
-        self.attack_sound = pygame.mixer.Sound(f"{SOUND_DIR}/{self.type}_hit.mp3")
+            self.attack_damage = 20
+        try:
+            self.attack_sound = pygame.mixer.Sound(f"{SOUND_DIR}/{self.type}_hit.mp3")
+        except:
+            self.attack_sound = pygame.mixer.Sound(f"{SOUND_DIR}/mushroom_hit.mp3")
         self.load_animations() 
         self.image = self.animation_list[self.current_action][self.frame_index]
         self.rect = self.image.get_rect()
@@ -210,7 +220,7 @@ class Enemy(pygame.sprite.Sprite):
             if self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
                 self.attack_sound.play()
                 print(self.frame_index)
-                player.take_damage(10)
+                player.take_damage(self.attack_damage)
 
 
     def move_to_player(self, player):
