@@ -2,8 +2,6 @@ import pygame,os, random
 from settings import IMAGES_DIR, SCREEN_WIDTH, MAP_WIDTH, screen, SCREEN_THRUST_X, attack_sound, hurt_sound, die_sound
 
 
-SCREEN_THRUST_X = 400
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -82,7 +80,8 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         """Updates the player animation frame."""
-
+        if self.health < self.max_health and self.isActive:
+            self.health += 0.03
 
         if pygame.time.get_ticks() - self.update_time > self.animation_cooldown: 
             self.update_time = pygame.time.get_ticks()
