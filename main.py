@@ -118,6 +118,29 @@ class Ocean(pygame.sprite.Sprite):
             player.take_damage(20)
             self.last_damage_time = pygame.time.get_ticks()
 
+class Cactus(pygame.sprite.Sprite):
+    def __init__(self, x, y, cell):
+        super().__init__()
+        self.image = pygame.image.load(f"{IMAGES_DIR}/maps/{level_type}/{cell}.png")
+        self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE * 2))
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = x
+        self.rect.y = y
+        self.last_damage_time = pygame.time.get_ticks()
+
+    def update(self):
+        self.rect.x = self.x - bg_scroll_x
+        self.rect.y = self.y - bg_scroll_y
+        
+    def check_collision(self,player):
+        if self.rect.colliderect(player.rect) and player.isActive and pygame.time.get_ticks() - self.last_damage_time > 300:
+            player.take_damage(20)
+            self.last_damage_time = pygame.time.get_ticks()
+
+    def draw(self):
+        screen.blit(self.image, (self.rect.x, self.rect.y))
 
 class Boundary(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
@@ -202,6 +225,7 @@ class Collectable_Item(pygame.sprite.Sprite):
                 player.HaveSword = True
                 notification.show("You got a Fire Sword!", 4000)
                 bonus_sound.play()
+                player.attack_damage = 60
                 self.kill()
         
     def draw(self):
@@ -571,7 +595,10 @@ def create_map():
                     tile = Tile(world_x, world_y, cell)
                     tile_group.add(tile)
                 elif cell == 17:
-                    ocean = Ocean(world_x, world_y)
+                    if current_level == 3:
+                        ocean = Cactus(world_x, world_y, cell)
+                    else:
+                        ocean = Ocean(world_x, world_y)
                     ocean_group.add(ocean)
                 elif cell == 18:
                     decoration = Decoration(world_x, world_y, cell, "water")
@@ -606,11 +633,16 @@ def create_map():
                 elif cell == 30:
                     if current_level == 1:
                         decoration = Decoration(world_x, world_y, cell, "cut_tree")
+                    elif current_level == 3:
+                        decoration = Decoration(world_x, world_y, cell,"bush")
                     else:
                         decoration = Decoration(world_x, world_y, cell, "winter_tree")
                     decoration_group.add(decoration)
                 elif cell == 31 or cell == 32:
-                    decoration = Decoration(world_x, world_y, cell, "tree")
+                    if current_level == 3:
+                        decoration = Decoration(world_x, world_y, cell, "box")
+                    else:
+                        decoration = Decoration(world_x, world_y, cell, "tree")
                     decoration_group.add(decoration)
                 elif cell == 33:
                     enemy = Enemy(world_x, world_y, "mushroom")
@@ -628,12 +660,22 @@ def create_map():
                 elif cell == 38:
                     collect = Collectable_Item(world_x, world_y, "shield")
                     collectable_item_group.add(collect) 
-                
+                elif cell == 44:
+                    enemy = Enemy(world_x, world_y, "snake")
+                    enemy_group.add(enemy) 
+
                 elif cell == 45:
                     enemy = Enemy(world_x, world_y, "snow_man")
                     enemy_group.add(enemy)   
+                elif cell == 46:
+                    enemy = Enemy(world_x, world_y, "mummy")
+                    enemy_group.add(enemy) 
+
                 elif cell == 49:
                     collect = Collectable_Item(world_x, world_y, "slider_power")
+                    collectable_item_group.add(collect)
+                elif cell == 50:
+                    collect = Collectable_Item(world_x, world_y, "sword")
                     collectable_item_group.add(collect)
                    
                 elif cell == 100:
@@ -717,7 +759,63 @@ def reset_game():
     smoke_group.empty()
     collectable_item_group.empty()
     
+def game_end_scene():
+    pygame.init()
 
+
+    # Static credits (left side)
+    credits_text = """Game Developed by Ahtesham\nMusic by XYZ\nGraphics by ABC\nSpecial Thanks to You!""".split("\n")
+    credits_surfaces = [notification_font.render(line, True, (0, 128, 128)) for line in credits_text]
+
+    # Scrolling game ending text (right side)
+   # Scrolling game ending text (right side)
+    ending_text = """After a long journey filled with peril and wonder,\n the Aurora Knight stood atop the final peak, \ngazing at the land once shrouded  in darkness. 
+    The echoes of past battles faded into  the whispering \n wind, and the enchanted forests, frozen tundras, \n and golden deserts were once again brimming with life. 
+
+    The mystical leaf that granted the knight \n the power of the wind, the ephemeral \nclouds that guided their steps, and the shimmering \n bubble shield that protected them 
+    were no longer mere tools \n of survival but cherished memories of a grand adventure.
+
+    The ancient evils that sought to \n disrupt the world's harmony had been vanquished, \n their shadows dissolved into the ether. \n The people of the realm, once fearful, 
+    now rejoiced, their laughter and \n songs carried across the lands like a melody of hope.
+
+    But as the Aurora Knight sheathed their sword, \n a realization settled in — every ending is but \n a new beginning.The world is vast, filled with secrets yet to be uncovered, 
+    paths \n yet to be walked, and stories yet to be told.
+
+    For now, the knight rests, watching \n as the auroras dance across the sky, a reminder \n of the journey undertaken and the bonds \n formed along the way. 
+
+    Thank you for being a part of this adventure. Until we meet again...""".split("\n")
+
+    ending_surfaces = [notification_font.render(line, True, (0, 128, 128)) for line in ending_text]
+    text_height = ending_surfaces[0].get_height()
+    scroll_y = SCREEN_HEIGHT  # Start from bottom
+    scroll_speed = 1  # Adjust scrolling speed
+
+    running = True
+    while running:
+        screen.blit(bg_img, (0, 0))  # Draw background
+        
+        # Draw static credits on the left side
+        for i, credit_surface in enumerate(credits_surfaces):
+            screen.blit(credit_surface, (50, 100 + i * text_height))
+        
+        # Draw scrolling ending text on the right side
+        for i, text_surface in enumerate(ending_surfaces):
+            screen.blit(text_surface, (SCREEN_WIDTH//2 -100, scroll_y + i * text_height))
+        
+        # Scroll text upward
+        scroll_y -= scroll_speed
+        
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                running = False
+        
+        pygame.display.flip()
+        pygame.time.delay(30)  # Control frame rate
+
+    pygame.quit()
 
 
 # ──────────────────────────────────
@@ -736,16 +834,14 @@ bg_scroll_y = 0
 bg_parallax_x = 0
 current_level = 1
 level_type = "forest"
-leaf_images = forest_particle
 intro_bg = forest_intro_background
+leaf_images  = forest_particle
 bg_img = forest_bg
 background_music = forest_background_music
-
 
 # Create button instance
 button = Button(340, 300, 130, 130, button_image)
 GameIntro()
-
 exit = Exit(0, 0)
 create_map()
 notification = Notification(board_img, "Notification Text", notification_font)
@@ -884,19 +980,40 @@ while running:
     draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
     
     if player.rect.colliderect(exit.rect):
-        # Change the Level and reset all values
-        current_level += 1
-        reset_game()
-        if current_level == 2:
-            level_type = "winter"
-            intro_bg = winter_intro_background
-            leaf_images = winter_particle
-            bg_img = winter_bg
+        if current_level == 1 and not player.HaveCloud:
+            notification.show("You did not collected the Cloud Power", 3000)
+        elif current_level == 2 and not player.HaveSlider:
+            notification.show("You did not collected the Slider Power", 3000)
+        
+        elif current_level == 3:
+            game_end_scene()
+        else:
+            # Change the Level and reset all values
+            current_level += 1
+            reset_game()
             background_music.fadeout(1000)
-            background_music = winter_background_music
             level_complete_sound.play()
-        GameIntro()
-        create_map()
+            if current_level == 2:
+                level_type = "winter"
+                intro_bg = winter_intro_background
+                leaf_images = winter_particle
+                bg_img = winter_bg
+                background_music = winter_background_music
+            elif current_level == 3:
+                level_type = "desert"
+                intro_bg = desert_intro_background
+                leaf_images = sand_particle
+                bg_img = desert_bg
+                background_music = desert_background_music
+                
+            GameIntro()
+            create_map()
+            
+            if current_level == 2:
+                player.HaveCloud = True
+                
+            elif current_level == 3:
+                player.HaveGlider = True
 
     
     # Display FPS in Top Middle

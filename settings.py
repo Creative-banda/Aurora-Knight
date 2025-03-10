@@ -134,13 +134,16 @@ size = {
 
 # Load leaf images (0.png to 4.png)
 forest_particle = []
+sand_particle = []
 winter_particle = []
 
-for j in ["forest", "winter"]:
+for j in ["forest", "winter","sand"]:
     for i in range(5):
         image = pygame.image.load(fr"assets\images\effects\{j}_particle\{i}.png")
         image = pygame.transform.scale(image, (10, 10))  # Resize if needed
         if j == "forest":
             forest_particle.append(image)
+        elif j == "sand":
+            sand_particle.append(image)
         else:
             winter_particle.append(image)

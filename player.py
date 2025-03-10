@@ -19,6 +19,7 @@ class Player(pygame.sprite.Sprite):
         self.isActive = True
         self.health = 100
         self.max_health = self.health
+        self.attack_damage = 30
             
         self.animation_names = ["Idle", "Run", "Walk", "Jump", "Attack", "Dead", "JumpAttack","fire_attack"]
         self.animation_list = []  # Store animation frames
@@ -49,10 +50,10 @@ class Player(pygame.sprite.Sprite):
         
         self.max_power = 100
         self.power = self.max_power
-        self.HaveCloud = True
+        self.HaveCloud = False
         self.HaveShield = False
-        self.HaveSword = True
-        self.HaveGlider = True
+        self.HaveSword = False
+        self.HaveGlider = False
         self.onGlider = False
         
         
@@ -311,7 +312,7 @@ class Player(pygame.sprite.Sprite):
             for enemy in enemy_group:
                 if self.attack_rect.colliderect(enemy.rect) and pygame.time.get_ticks() - self.last_attack_time > 500:
                     if self.frame_index > 3 and self.frame_index < 11:
-                        enemy.take_damage(30)
+                        enemy.take_damage(self.attack_damage)
                         self.last_attack_time = pygame.time.get_ticks()
         return screen_dx, screen_dy
 

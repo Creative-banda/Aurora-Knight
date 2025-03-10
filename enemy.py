@@ -11,8 +11,8 @@ class Enemy(pygame.sprite.Sprite):
         self.type = type
         self.y = y 
         self.health = 100
-        self.max_health = self.health
         self.current_action = 0
+        self.size = (CELL_SIZE, CELL_SIZE)
         self.speed = 1       
         self.action_list = ["idle", "run", "attack", "die","hit"]
         if self.type == "mushroom":
@@ -27,6 +27,11 @@ class Enemy(pygame.sprite.Sprite):
             self.attack_frame = 1
             self.end_frame = 5
             self.attack_damage = 30
+        elif self.type == "mummy":
+            self.attack_damage = 50
+            self.attack_frame = 1
+            self.end_frame = 5
+            self.health = 200
         else:
             self.size = (CELL_SIZE * 1.5, CELL_SIZE)
             self.attack_frame = 1
