@@ -215,7 +215,7 @@ class Collectable_Item(pygame.sprite.Sprite):
                 self.kill()
             
             elif self.item_type == "slider_power":
-                player.HaveSlider = True
+                player.HaveGlider = True
                 
                 notification.show("You got a new power! Press Jump 1 to use Slider", 4000)
                 bonus_sound.play()
