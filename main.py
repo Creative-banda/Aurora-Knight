@@ -982,7 +982,7 @@ while running:
     if player.rect.colliderect(exit.rect):
         if current_level == 1 and not player.HaveCloud:
             notification.show("You did not collected the Cloud Power", 3000)
-        elif current_level == 2 and not player.HaveSlider:
+        elif current_level == 2 and not player.HaveGlider:
             notification.show("You did not collected the Slider Power", 3000)
         
         elif current_level == 3:

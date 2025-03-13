@@ -190,9 +190,9 @@ class Enemy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # draw vision rectangle
-        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
+        # pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
 
-        pygame.draw.rect(screen, BLACK, self.rect, 1)
+        # pygame.draw.rect(screen, BLACK, self.rect, 1)
     
     def take_damage(self, damage):
         if not self.alive:
