@@ -221,10 +221,8 @@ class Enemy(pygame.sprite.Sprite):
 
     def do_attack(self, player):
         if self.rect.colliderect(player.rect) :
-            print(self.frame_index)
             if self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
                 self.attack_sound.play()
-                print(self.frame_index)
                 player.take_damage(self.attack_damage)
 
 

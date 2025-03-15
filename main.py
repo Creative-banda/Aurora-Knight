@@ -729,6 +729,9 @@ def game_over_screen(screen):
 
     # -------------------- Show Text & Enable Input --------------------
     running = True
+    hasCloud = player.HaveCloud
+    hasGlider = player.HaveGlider
+    
     while running:
         screen.blit(text, text_rect)  # Draw "Game Over" text
         pygame.display.update()
@@ -738,9 +741,10 @@ def game_over_screen(screen):
                 pygame.quit()
                 exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                print("Restarting game...")
                 reset_game()
                 create_map()
+                player.HaveCloud = hasCloud
+                player.HaveGlider = hasGlider
                 running = False
                 break
 
@@ -863,7 +867,6 @@ while running:
     
     if not player.alive:
         game_over_screen(screen)
-        print("Game Over")
     
     # Update main map scrolling (keep this as is)
     bg_scroll_x += x
@@ -975,7 +978,6 @@ while running:
     particle_group.update()
     particle_group.draw(screen)
          
-    # print(player.rect.x, player.rect.y)
     draw_bar(screen, player.health, (10, 10), health_bar, (255, 0, 0))
     draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
     
