@@ -2,7 +2,6 @@
 ====================================
     Aurora Knight - Main Script
 ====================================
-A 2D platformer game built with Pygame.
 """
 
 # ──────────────────────────────────
@@ -118,6 +117,7 @@ class Ocean(pygame.sprite.Sprite):
             player.take_damage(20)
             self.last_damage_time = pygame.time.get_ticks()
 
+
 class Cactus(pygame.sprite.Sprite):
     def __init__(self, x, y, cell):
         super().__init__()
@@ -141,6 +141,7 @@ class Cactus(pygame.sprite.Sprite):
 
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
+
 
 class Boundary(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
@@ -287,14 +288,6 @@ class LeafParticle(pygame.sprite.Sprite):
         rotated_image = pygame.transform.rotate(self.image, self.angle)
         new_rect = rotated_image.get_rect(center=self.rect.center)
         screen.blit(rotated_image, new_rect.topleft)
-
-
-def generate_particles():
-    if len(particle_group) < 10:
-        x = random.randint(bg_scroll_x, player.rect.x + bg_scroll_x)
-        y = random.randint(0, 10)
-        particle = LeafParticle(x, y, leaf_images)
-        particle_group.add(particle)
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -575,8 +568,7 @@ def draw_bar(screen, health, position, image, bar_color=(255, 0, 0)):
     # Draw the health bar frame image on top
     screen.blit(image, position)
 
-
-        
+     
 def create_map():
     
     global player, bg_scroll_x, bg_scroll_y
@@ -762,7 +754,8 @@ def reset_game():
     cloud_group.empty()
     smoke_group.empty()
     collectable_item_group.empty()
-    
+
+
 def game_end_scene():
     pygame.init()
 
@@ -822,6 +815,14 @@ def game_end_scene():
     pygame.quit()
 
 
+def generate_particles():
+    if len(particle_group) < 10:
+        x = random.randint(bg_scroll_x, player.rect.x + bg_scroll_x)
+        y = random.randint(0, 10)
+        particle = LeafParticle(x, y, leaf_images)
+        particle_group.add(particle)
+
+
 # ──────────────────────────────────
 # GAME VARIABLES & OBJECTS
 # ──────────────────────────────────
@@ -831,32 +832,38 @@ running = True
 # Clock 
 clock = pygame.time.Clock()
 
+# scrolling variables
 bg_scroll_x = 0
 bg_scroll_y = 0
 
-# Initialize dedicated background parallax variables
+# initialize dedicated background parallax variables
 bg_parallax_x = 0
 current_level = 1
+
+# level specific variables
+
 level_type = "forest"
 intro_bg = forest_intro_background
 leaf_images  = forest_particle
 bg_img = forest_bg
 background_music = forest_background_music
 
-# Create button instance
+# create instances
 button = Button(340, 300, 130, 130, button_image)
-GameIntro()
-exit = Exit(0, 0)
-create_map()
 notification = Notification(board_img, "Notification Text", notification_font)
+exit = Exit(0, 0)
+
+
+GameIntro()
+create_map()
 
 shield = Shield(player.x, player.y)
 glider = Glider()
 
 # ──────────────────────────────────
-# 🎮 MAIN GAME LOOP
+# MAIN GAME LOOP
 # ──────────────────────────────────
-
+bg_x = 0
 while running:
     clock.tick(60)
     
@@ -872,15 +879,18 @@ while running:
     bg_scroll_x += x
     bg_scroll_y += y
     
-    # Update background parallax (moves opposite direction at reduced speed)
-    bg_parallax_x -= x * 0.3  # Opposite direction to player movement
     
-    # Calculate the modulo for infinite background scrolling
-    bg_x = bg_parallax_x % SCREEN_WIDTH
-    
-    # Draw the background with parallax effect
-    screen.blit(bg_img, (bg_x - SCREEN_WIDTH, 0))
-    screen.blit(bg_img, (bg_x, 0))
+    bg_x -= x * 0.2  # Parallax effect
+
+    # If the background completely moves off-screen, reset its position
+    if bg_x <= -SCREEN_WIDTH:
+        bg_x = 0
+
+    # Draw the background twice
+    screen.blit(bg_img, (bg_x, 0))  # Current background
+    screen.blit(bg_img, (bg_x + SCREEN_WIDTH, 0))  # Next background
+
+    # Check for events 
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -911,17 +921,22 @@ while running:
     
     player_x = player.rect.x 
     
+    # Update and draw Tile Group (only visible tiles)
     for tile in tile_group:
         diff_x = abs(tile.x - bg_scroll_x - player_x)
         if diff_x < 800:
             tile.update()
             tile.draw()
+        
+    # Update and draw Decoration Group (only visible decorations)
 
     for decoration in decoration_group:
         diff_x = abs(decoration.x - bg_scroll_x - player_x)
         if diff_x < 800:
             decoration.update()
             decoration.draw()
+        
+    # Update and draw Enemy Group (only visible enemies)
         
     for enemy in enemy_group:
         diff_x = abs(enemy.x - bg_scroll_x - player_x)
@@ -930,7 +945,8 @@ while running:
             enemy.ai(player)
             enemy.update()
             enemy.draw()
-
+    
+    # Update and draw Collectable Item Group
 
     collectable_item_group.update()
     collectable_item_group.draw(screen)
@@ -941,6 +957,7 @@ while running:
     for ocean in ocean_group:
         ocean.check_collision(player)
     
+    # Update and draw other groups
     
     ocean_group.update()
     ocean_group.draw(screen)
@@ -951,14 +968,22 @@ while running:
     exit.update()
     exit.draw()
     
+    # Draw Shield if player has it
+    
     if player.HaveShield:
         shield.update(player)
         shield.draw()
-        
+    
+    # Update Boundary Group to prevent player from going out of the screen
+    
     boundary_group.update()
+    
+    # Update and draw player
     
     player.update()
     player.draw()
+    
+    # Update and draw smoke group for glider
     
     smoke_group.update()
     smoke_group.draw(screen)
@@ -977,9 +1002,13 @@ while running:
     
     particle_group.update()
     particle_group.draw(screen)
+    
+    # Draw Health and Power Bars
          
     draw_bar(screen, player.health, (10, 10), health_bar, (255, 0, 0))
     draw_bar(screen, player.power, (10, 70), spell_bar, (0, 255, 0))
+    
+    # Check if player collides with exit and change level
     
     if player.rect.colliderect(exit.rect):
         if current_level == 1 and not player.HaveCloud:
