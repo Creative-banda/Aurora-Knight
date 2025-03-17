@@ -1052,7 +1052,7 @@ while running:
     fps_text = pygame.font.Font(None, 30).render(fps, True, pygame.Color(BLACK))
     screen.blit(fps_text, (SCREEN_WIDTH // 2, 10))
 
-
+    
     pygame.display.update()
 
 pygame.quit()
