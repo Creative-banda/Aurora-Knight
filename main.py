@@ -838,15 +838,15 @@ bg_scroll_y = 0
 
 # initialize dedicated background parallax variables
 bg_parallax_x = 0
-current_level = 3
+current_level = 1
 
 # level specific variables
 
-level_type = "desert"
-intro_bg = desert_intro_background
-leaf_images  = sand_particle
-bg_img = desert_bg
-background_music = desert_background_music
+level_type = "forest"
+intro_bg = forest_intro_background
+leaf_images  = forest_particle
+bg_img = forest_bg
+background_music = forest_background_music
 
 # create instances
 button = Button(340, 300, 130, 130, button_image)
