@@ -761,7 +761,7 @@ def game_end_scene():
 
 
     # Static credits (left side)
-    credits_text = """Game Developed by Ahtesham\nMusic by XYZ\nGraphics by ABC\nSpecial Thanks to You!""".split("\n")
+    credits_text = """Game Developed by Ahtesham\nMusic From Swordiago\nSpecial Thanks to You!""".split("\n")
     credits_surfaces = [notification_font.render(line, True, (0, 128, 128)) for line in credits_text]
 
     # Scrolling game ending text (right side)
@@ -838,15 +838,15 @@ bg_scroll_y = 0
 
 # initialize dedicated background parallax variables
 bg_parallax_x = 0
-current_level = 1
+current_level = 3
 
 # level specific variables
 
-level_type = "forest"
-intro_bg = forest_intro_background
-leaf_images  = forest_particle
-bg_img = forest_bg
-background_music = forest_background_music
+level_type = "desert"
+intro_bg = desert_intro_background
+leaf_images  = sand_particle
+bg_img = desert_bg
+background_music = desert_background_music
 
 # create instances
 button = Button(340, 300, 130, 130, button_image)
@@ -880,15 +880,15 @@ while running:
     bg_scroll_y += y
     
     
-    bg_x -= x * 0.2  # Parallax effect
-
-    # If the background completely moves off-screen, reset its position
-    if bg_x <= -SCREEN_WIDTH:
-        bg_x = 0
-
-    # Draw the background twice
-    screen.blit(bg_img, (bg_x, 0))  # Current background
-    screen.blit(bg_img, (bg_x + SCREEN_WIDTH, 0))  # Next background
+    # Update background parallax (moves opposite direction at reduced speed)
+    bg_parallax_x -= x * 0.3  # Opposite direction to player movement
+    
+    # Calculate the modulo for infinite background scrolling
+    bg_x = bg_parallax_x % SCREEN_WIDTH
+    
+    # Draw the background with parallax effect
+    screen.blit(bg_img, (bg_x - SCREEN_WIDTH, 0))
+    screen.blit(bg_img, (bg_x, 0))
 
     # Check for events 
     
