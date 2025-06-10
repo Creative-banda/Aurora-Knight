@@ -228,7 +228,7 @@ class Player(pygame.sprite.Sprite):
 
         # --- Handle Collisions --- #
         
-        ## ✅ **Horizontal Collision (Walls & Boundaries)**
+        ## Horizontal Collision (Walls & Boundaries)
         player_rect_horizontal = self.rect.copy()
         player_rect_horizontal.x += dx
 
@@ -258,7 +258,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x += dx
     
 
-        ## ✅ **Vertical Collision (Ground & Platforms)**
+        ## Vertical Collision (Ground & Platforms)
         player_rect_vertical = self.rect.copy()
         player_rect_vertical.y += dy
 
@@ -288,7 +288,7 @@ class Player(pygame.sprite.Sprite):
 
         # --- Handle Scrolling --- #
         
-        ## ✅ **Horizontal Scrolling**
+        ## Horizontal Scrolling
         if self.rect.right > SCREEN_THRUST_X:
             if self.rect.x + dx < MAP_WIDTH - SCREEN_WIDTH:
                 screen_dx = dx
@@ -297,7 +297,7 @@ class Player(pygame.sprite.Sprite):
             screen_dx = dx
             self.rect.x -= dx  
 
-        ## ✅ **Vertical Scrolling (Only when in air)**
+        ## Vertical Scrolling (Only when in air)
         if self.rect.bottom > self.target_y and self.vel_y > 0:
             screen_dy = self.rect.bottom - self.target_y
             self.rect.bottom = self.target_y

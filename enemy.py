@@ -62,8 +62,8 @@ class Enemy(pygame.sprite.Sprite):
     
         
         self.vision_rect = pygame.Rect(self.x + 75, self.y - 100, 150, 20)
-    
-    
+
+
     def load_animations(self):
         for action in self.action_list:
             temp_list = []
@@ -173,7 +173,6 @@ class Enemy(pygame.sprite.Sprite):
                 break  # Stop checking once collision is handled 
 
 
-
         # Update enemy's actual position (without applying bg_scroll_y)
         self.y += dy  # Always allow falling
         self.rect.y = self.y - bg_scroll_y  # Adjust rendering only
@@ -190,10 +189,11 @@ class Enemy(pygame.sprite.Sprite):
     def draw(self):
         screen.blit(self.image, (self.rect.x, self.rect.y))
         # draw vision rectangle
-        pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
+        # pygame.draw.rect(screen, BLUE, self.vision_rect, 1)
 
-        pygame.draw.rect(screen, BLACK, self.rect, 1)
-    
+        # pygame.draw.rect(screen, BLACK, self.rect, 1)
+
+
     def take_damage(self, damage):
         if not self.alive:
             if self.current_action == 5:
@@ -221,10 +221,8 @@ class Enemy(pygame.sprite.Sprite):
 
     def do_attack(self, player):
         if self.rect.colliderect(player.rect) :
-            print(self.frame_index)
             if self.frame_index >= self.attack_frame and self.frame_index < self.end_frame:
                 self.attack_sound.play()
-                print(self.frame_index)
                 player.take_damage(self.attack_damage)
 
 
